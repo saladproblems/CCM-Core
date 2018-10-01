@@ -1,0 +1,106 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<Configuration>
+    <ViewDefinitions>  	
+	
+	<View>
+		<Name>CimInstance.SMS_Collection</Name>
+		<ViewSelectedBy>
+			<TypeName>CimInstance.SMS_Collection</TypeName>
+		</ViewSelectedBy>
+	<TableControl>
+		<TableHeaders>
+			<TableColumnHeader>
+				<Width>50
+				</Width>
+			</TableColumnHeader>
+			<TableColumnHeader>
+				<Width>20</Width>
+			</TableColumnHeader>
+			<TableColumnHeader>
+				<Width>25</Width>
+			</TableColumnHeader>
+			<TableColumnHeader>
+				<Width>10</Width>
+			</TableColumnHeader>
+			<TableColumnHeader>
+				<Width>30</Width>
+			</TableColumnHeader>
+
+		</TableHeaders>
+		<TableRowEntries>
+			<TableRowEntry>
+				<TableColumnItems>
+					<TableColumnItem>
+						<PropertyName>Name</PropertyName>
+					</TableColumnItem>
+					<TableColumnItem>
+						<PropertyName>CollectionRules</PropertyName>
+					</TableColumnItem>
+					<TableColumnItem>
+						<PropertyName>LastChangeTime</PropertyName>
+					</TableColumnItem>
+					<TableColumnItem>
+						<PropertyName>LimitToCollectionID</PropertyName>
+					</TableColumnItem>
+					<TableColumnItem>
+						<PropertyName>LimitToCollectionName</PropertyName>
+					</TableColumnItem>
+
+				</TableColumnItems>
+			</TableRowEntry>
+		</TableRowEntries>
+	</TableControl>
+	</View>
+
+	<View>
+		<Name>SEP.Client</Name>
+		<ViewSelectedBy>
+			<TypeName>SEP.Client</TypeName>
+		</ViewSelectedBy>
+	<TableControl>
+		<TableHeaders>
+			<TableColumnHeader>
+				<Width>20
+				</Width>
+			</TableColumnHeader>
+			<TableColumnHeader>
+				<Width>20</Width>
+			</TableColumnHeader>
+			<TableColumnHeader>
+				<Width>20</Width>
+			</TableColumnHeader>
+			<TableColumnHeader>
+				<Width>15</Width>
+			</TableColumnHeader>
+			<TableColumnHeader>
+				<Width>25</Width>
+			</TableColumnHeader>
+
+		</TableHeaders>
+		<TableRowEntries>
+			<TableRowEntry>
+				<TableColumnItems>
+					<TableColumnItem>
+						<PropertyName>ComputerName</PropertyName>
+					</TableColumnItem>
+					<TableColumnItem>
+						<PropertyName>Domain</PropertyName>
+					</TableColumnItem>
+					<TableColumnItem>
+						<PropertyName>AGENT_VERSION</PropertyName>
+					</TableColumnItem>
+					<TableColumnItem>
+						<PropertyName>Last_Server</PropertyName>
+					</TableColumnItem>
+					<TableColumnItem>
+						<PropertyName>AV_Revision</PropertyName>
+					</TableColumnItem>
+
+				</TableColumnItems>
+			</TableRowEntry>
+		</TableRowEntries>
+	</TableControl>
+	</View>
+    </ViewDefinitions>
+</Configuration>
+
