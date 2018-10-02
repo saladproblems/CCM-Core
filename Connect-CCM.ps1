@@ -21,20 +21,24 @@
         {
             $cimSession | Remove-CimSession
         }
+        
+        $siteParm = @{
+            ClassName = 'SMS_ProviderLocation'
+            NameSpace = 'root/sms'
+        }
 
-        try
+        $siteName = try
         {
-            $null = Get-CimInstance Win32_BIOS -ErrorAction Stop -CimSession $cim
+            (Get-CimInstance @siteParm -CimSession $cimSession)[0].NamespacePath -replace '^.+site_'
         }
         catch
         {
             $cimSession = New-CimSession -ComputerName $ComputerName -Name "ccmConnection" -Credential $Credential
+            (Get-CimInstance @siteParm -CimSession $cimSession)[0].NamespacePath -replace '^.+site_'
         }
     }
     end
     {
-        $siteName = (Get-CimInstance -ClassName SMS_ProviderLocation -CimSession $cimSession -Namespace root/sms)[0].NamespacePath -replace '^.+site_'
-
         Set-Variable -Name global:CCMConnection -Value @{
             CimSession = $cimSession
             NameSpace = 'root\sms\site_{0}' -f $siteName
