@@ -6,8 +6,10 @@
         [Parameter(Mandatory=$true)]
         [string]$ComputerName,
 
+        [Parameter()]
         [switch]$Reconnect,
 
+        [Parameter()]
         [System.Management.Automation.PSCredential]
         $Credential
     )

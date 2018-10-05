@@ -1,7 +1,7 @@
 ﻿Function Get-CCMResource 
 {
     
-    [cmdletbinding(SupportsShouldProcess=$true)]
+    [cmdletbinding()]
 
     param(
 

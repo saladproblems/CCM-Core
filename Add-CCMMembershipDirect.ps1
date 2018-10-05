@@ -3,8 +3,10 @@
     [cmdletbinding(SupportsShouldProcess=$true)]
 
     param(
+        [Parameter()]
         [CimInstance[]]$Resource,
 
+        [Parameter()]
         [CimInstance]$Collection
     )
 
