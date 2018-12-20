@@ -4,6 +4,7 @@ Function Get-CCMScript
     [cmdletbinding(SupportsShouldProcess=$true)]
 
     param(
+<<<<<<< HEAD
         [Parameter(ValueFromPipelineByPropertyName,ParameterSetName='ScriptGUID')]
         [Alias('GUID')]
         [guid[]]$ScriptGUID,
@@ -15,6 +16,16 @@ Function Get-CCMScript
         [Parameter(ValueFromPipelineByPropertyName=$true,ParameterSetName='Author')]
         [string[]]$Author,
 
+=======
+        [Parameter(ValueFromPipelineByPropertyName=$true,ParameterSetName='ScriptGUID')]
+        [Alias('GUID')]
+        [guid[]]$ScriptGUID,
+
+        [Parameter(ValueFromPipelineByPropertyName=$true,Position=0,ParameterSetName='ScriptName')]
+        [Alias('Name')]
+        [string[]]$ScriptName,
+
+>>>>>>> 2b4d3f0ee9a6ecdd2558d36cab745819eb835d91
         [Parameter(ParameterSetName='Filter')]
         [string]$Filter
     )
@@ -41,7 +52,11 @@ Function Get-CCMScript
                 {
                     if ($obj -match '\*')
                     {
+<<<<<<< HEAD
                         "ScriptName LIKE '$($obj -replace '\*','%')'" | Write-Output -OutVariable cap
+=======
+                        "ScriptName LIKE '$($obj -replace '\*','%')'" | Tee-Object -OutVariable cap
+>>>>>>> 2b4d3f0ee9a6ecdd2558d36cab745819eb835d91
                     }
                     else
                     {
@@ -49,6 +64,7 @@ Function Get-CCMScript
                     }
                 }
             }
+<<<<<<< HEAD
             'Author'
             {
                 Foreach ($obj in $Author)
@@ -63,6 +79,8 @@ Function Get-CCMScript
                     }
                 }
             }
+=======
+>>>>>>> 2b4d3f0ee9a6ecdd2558d36cab745819eb835d91
 
             'ScriptGUID'
             {
@@ -82,7 +100,11 @@ Function Get-CCMScript
         }
 
         #"\" is an escape character in WQL
+<<<<<<< HEAD
         Get-CimInstance @cimHash -ClassName SMS_Scripts -Filter ($cimFilter -join ' OR ' -replace '\\','\\' ) | Add-CCMClassType
+=======
+        Get-CimInstance @cimHash -ClassName SMS_Scripts -Filter ($cimFilter -join ' OR ' -replace '\\','\\' ) | Add-CimClassType
+>>>>>>> 2b4d3f0ee9a6ecdd2558d36cab745819eb835d91
         
     }
 }
