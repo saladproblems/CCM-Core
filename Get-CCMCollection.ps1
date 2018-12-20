@@ -109,12 +109,8 @@ https://github.com/saladproblems/CCM-Core
             #Add handling piping in a resource here
         }
         
-<<<<<<< HEAD
         Get-CimInstance @cimHash -ClassName SMS_Collection -Filter ($cimFilter -join ' OR ') |
             Add-CCMClassType
-=======
-        Get-CimInstance @cimHash -ClassName SMS_Collection -Filter ($cimFilter -join ' OR ') | Add-CimClassType
->>>>>>> 2b4d3f0ee9a6ecdd2558d36cab745819eb835d91
 
     }
     End
