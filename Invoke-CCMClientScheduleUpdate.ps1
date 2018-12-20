@@ -1,4 +1,5 @@
-﻿Function Invoke-CCMClientScheduleUpdate
+﻿<# This function should be moved to the CCM client module
+Function Invoke-CCMClientScheduleUpdate
 {
     [cmdletbinding()]
 
@@ -90,3 +91,4 @@
     }
 
 }
+#>

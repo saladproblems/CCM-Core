@@ -1,12 +1,20 @@
     Write-Verbose "Importing $($MyInvocation.MyCommand.Name )"
 
+#helper function for adding typenames
+<#
+some objects with lazy properties use Microsoft.Management.Infrastructure.CimInstance#__PartialCIMInstance
+this will add the full object classname to the top of PSObject.TypeNames
+#>
+Filter Add-CCMClassType { $PSItem.PSObject.TypeNames.Insert(0,"Microsoft.Management.Infrastructure.CimInstance#$($PSItem.CimClass.CimClassName)");$PSItem }
 Function Add-CCMMembershipDirect
 {
     [cmdletbinding(SupportsShouldProcess=$true)]
 
     param(
+        [Parameter()]
         [CimInstance[]]$Resource,
 
+        [Parameter()]
         [CimInstance]$Collection
     )
 
@@ -37,11 +45,9 @@ Function Add-CCMMembershipDirect
 
     End
     {        
-
         $Collection | Invoke-CimMethod -MethodName AddMemberShipRules -Arguments @{ CollectionRules = [CimInstance[]]$cmRule } -ErrorAction Stop
 
         $cmRule | Out-String | Write-Verbose
-
     }
 
 }
@@ -116,8 +122,6 @@ and
 }
 
 #>
-#helper function for adding typenames
-Filter Add-CimClassType { $PSItem.PSObject.TypeNames.Insert(0,"CimInstance.$($PSItem.CimClass.CimClassName)");$PSItem }
 function Connect-CCM
 {
     [CmdletBinding()]
@@ -126,8 +130,10 @@ function Connect-CCM
         [Parameter(Mandatory=$true)]
         [string]$ComputerName,
 
+        [Parameter()]
         [switch]$Reconnect,
 
+        [Parameter()]
         [System.Management.Automation.PSCredential]
         $Credential
     )
@@ -165,6 +171,61 @@ function Connect-CCM
         }
     }
     
+}
+Function Get-CCMCimClass
+{   
+    [cmdletbinding()]
+    param(
+        [Parameter(Mandatory,Position=0)]
+        [Alias('Class')]
+        [string]$ClassName
+    )
+
+    Begin
+    {
+        try {
+            $cimHash = $Global:CCMConnection.PSObject.Copy()   
+        }
+        catch {
+            Throw 'Not connected to CCM, reconnect using Connect-CCM'
+        }       
+    }
+
+    Process
+    {
+        Get-CimClass @cimHash @PSBoundParameters
+    }
+}
+Function Get-CCMCimInstance
+{   
+    [cmdletbinding()]
+    param(
+        [Parameter(Mandatory,Position=0)]
+        [Alias('Class')]
+        [string]$ClassName,
+
+        [Parameter()]
+        [string]$Filter,
+
+        [Parameter(Position=1)]
+        [Alias('Properties')]
+        [string[]]$Property
+    )
+
+    Begin
+    {
+        try {
+            $cimHash = $Global:CCMConnection.PSObject.Copy()   
+        }
+        catch {
+            Throw 'Not connected to CCM, reconnect using Connect-CCM'
+        }        
+    }
+
+    Process
+    {
+        Get-CimInstance @cimHash @PSBoundParameters
+    }
 }
 function Get-CCMClientExecutionRequest
 {
@@ -221,8 +282,48 @@ function Get-CCMClientExecutionRequest
         
     }
 }
-Function Get-CCMCollection 
+Function Get-CCMCollection
 {
+
+<#
+.SYNOPSIS
+
+Get an SCCM Collection
+
+.DESCRIPTION
+
+Get an SCCM Collection by name or CollectionID, or requery a collection to retrieve lazy properties
+
+.PARAMETER Name
+Specifies the file name.
+
+.PARAMETER Extension
+Specifies the extension. "Txt" is the default.
+
+.INPUTS
+
+None. You cannot pipe objects to Add-Extension.
+
+.OUTPUTS
+
+System.String. Add-Extension returns a string with the extension
+or file name.
+
+.EXAMPLE
+
+C:\PS> Get-CCMCollection *
+Retrieves all collections
+
+.EXAMPLE
+
+C:\PS> Get-CCMCollection *SVR*
+Returns all collections with SVR in the name
+
+.LINK
+
+https://github.com/saladproblems/CCM-Core
+
+#>
     
     [cmdletbinding()]
 
@@ -291,13 +392,13 @@ Function Get-CCMCollection
 
             #Add handling piping in a resource here
         }
-          
+        
+        Get-CimInstance @cimHash -ClassName SMS_Collection -Filter ($cimFilter -join ' OR ') |
+            Add-CCMClassType
+
     }
-    
     End
-    {
-        Get-CimInstance @cimHash -ClassName SMS_Collection -Filter ($cimFilter -join ' OR ') | Add-CimClassType
-    }
+    {}
 }
 Function Get-CCMCollectionMember
 {    
@@ -358,7 +459,7 @@ Function Get-CCMCollectionSettings
 Function Get-CCMResource 
 {
     
-    [cmdletbinding(SupportsShouldProcess=$true)]
+    [cmdletbinding()]
 
     param(
 
@@ -375,8 +476,13 @@ Function Get-CCMResource
 
     Begin
     {
-            $cimHash = $Global:CCMConnection.PSObject.Copy()
-    }
+        try {
+            $cimHash = $Global:CCMConnection.PSObject.Copy()   
+        }
+        catch {
+            Throw 'Not connected to CCM, reconnect using Connect-CCM'
+        }
+    } 
 
     Process
     {
@@ -446,6 +552,8 @@ Function Get-CCMResourceMembership
     {     
         $cimHash = $Global:CCMConnection.PSObject.Copy()
 
+        $cimHash['ClassName'] = 'SMS_FullCollectionMembership'
+
         if ($Property) { $cimHash['Property'] = $Property }
         
         #$sbGetCollName = { (Get-CCMCollection -CollectionID $PSItem.CollectionID -Property name).Name}
@@ -459,7 +567,7 @@ Function Get-CCMResourceMembership
             {
                 Foreach ($obj in $Name)
                 {
-                    Get-CCMCollection -CollectionID (Get-CimInstance @cimHash -ClassName SMS_FullCollectionMembership -filter "Name='$obj'" -Property $Property).CollectionID| 
+                    Get-CCMCollection -CollectionID (Get-CimInstance @cimHash -filter "Name='$obj'").CollectionID | 
                         Sort-Object -Property Name
                         
                 }
@@ -470,7 +578,7 @@ Function Get-CCMResourceMembership
             {
                 Foreach ($obj in $ResourceID)
                 {
-                    Get-CCMCollection -CollectionID (Get-CimInstance @cimHash -ClassName SMS_FullCollectionMembership -filter "ResourceID='$obj'" -Property $Property) | 
+                    Get-CCMCollection -CollectionID (Get-CimInstance @cimHash -filter "ResourceID='$obj'") | 
                         Sort-Object -Property Name
                 }
             }
@@ -478,6 +586,142 @@ Function Get-CCMResourceMembership
            
     }
 }
+Function Get-CCMScript
+{
+    
+    [cmdletbinding(SupportsShouldProcess=$true)]
+
+    param(
+        [Parameter(ValueFromPipelineByPropertyName,ParameterSetName='ScriptGUID')]
+        [Alias('GUID')]
+        [guid[]]$ScriptGUID,
+
+        [Parameter(ValueFromPipelineByPropertyName,Position=0,ParameterSetName='ScriptName')]
+        [Alias('Name')]
+        [string[]]$ScriptName,
+
+        [Parameter(ValueFromPipelineByPropertyName=$true,ParameterSetName='Author')]
+        [string[]]$Author,
+
+        [Parameter(ParameterSetName='Filter')]
+        [string]$Filter
+    )
+
+    Begin
+    {
+            try {
+                $cimHash = $Global:CCMConnection.PSObject.Copy()   
+            }
+            catch {
+                Throw 'Not connected to CCM, reconnect using Connect-CCM'
+            }                     
+    }
+
+    Process
+    {
+        $cimFilter = $null
+
+        $cimFilter = Switch ($PSCmdlet.ParameterSetName)
+        {
+            'ScriptName'
+            {
+                Foreach ($obj in $ScriptName)
+                {
+                    if ($obj -match '\*')
+                    {
+                        "ScriptName LIKE '$($obj -replace '\*','%')'" | Write-Output -OutVariable cap
+                    }
+                    else
+                    {
+                        "ScriptName = '$obj'"
+                    }
+                }
+            }
+            'Author'
+            {
+                Foreach ($obj in $Author)
+                {
+                    if ($obj -match '\*')
+                    {
+                        "Author LIKE '$($obj -replace '\*','%')'" | Write-Output -OutVariable cap
+                    }
+                    else
+                    {
+                        "Author = '$obj'"
+                    }
+                }
+            }
+
+            'ScriptGUID'
+            {
+                Foreach ($obj in $ScriptGUID)
+                {
+                    "ScriptGuid='$obj'"
+                }
+            }
+
+            'Filter'
+            {
+                Foreach ($obj in $Filter)
+                {
+                    $Filter
+                }
+            }           
+        }
+
+        #"\" is an escape character in WQL
+        Get-CimInstance @cimHash -ClassName SMS_Scripts -Filter ($cimFilter -join ' OR ' -replace '\\','\\' ) | Add-CCMClassType
+        
+    }
+}
+Function Get-CCMScriptExecutionStatus
+{
+    [cmdletbinding()]
+
+    [alias('Get-CCMScriptsExecutionStatus')]
+    
+    param(
+        [Parameter(ValueFromPipeline=$true)]
+        [ciminstance[]]
+        $Script,
+
+        [Parameter()]
+        [datetime]
+        $Start,
+
+        [Parameter()]
+        [datetime]
+        $End
+
+    )
+
+    begin
+    {
+        try {
+            [hashtable]$cimHash = $Global:CCMConnection.PSObject.Copy()   
+        }
+        catch {
+            Throw 'Not connected to CCM, reconnect using Connect-CCM'
+        }
+
+        $cimHash['ClassName'] = 'SMS_ScriptsExecutionStatus'
+
+        $cimArray = [System.Collections.ArrayList]::new()
+    }
+
+    process
+    {
+        $cimArray.AddRange([ciminstance[]]$Script)
+    }
+
+    end
+    {
+        $filter = $cimArray.ForEach({ 'ScriptGUID = "{0}"' -f $PSItem.ScriptGuid }) -join ' OR '
+        
+        Get-CimInstance @cimHash -Filter $filter
+    }
+}
+<# This function should be moved to the CCM client module
 Function Invoke-CCMClientScheduleUpdate
 {
     [cmdletbinding()]
@@ -570,10 +814,11 @@ Function Invoke-CCMClientScheduleUpdate
     }
 
 }
+#>
 Function Invoke-CCMCollectionRefresh
 {
 
-   [cmdletbinding(SupportsShouldProcess=$true)]
+   [cmdletbinding()]
 
     param(
         [Parameter(Mandatory=$true,ValueFromPipeline=$true,Position=0)]
@@ -627,6 +872,8 @@ Function Invoke-CCMCollectionRefresh
     }
 
 }
+<#This function should be moved to the CCM client module
+
 Function Invoke-CCMPackageRerun
 {
     [cmdletbinding()]
@@ -697,6 +944,9 @@ Function Invoke-CCMPackageRerun
 }
 
 #https://kelleymd.wordpress.com/2015/02/08/run-local-advertisement-with-triggerschedule/
+#>
+<#This function should be moved to the client function module
+
 function Start-CCMClientComplianceSettingsEvaluation
 {
     [cmdletbinding()]
@@ -740,8 +990,7 @@ function Start-CCMClientComplianceSettingsEvaluation
             0 = 'Idle'
             1 = 'Evaluated'
             5 = 'Not Evaluated'                                   
-        } 
-        #>
+        }         
 }
 
     Process
@@ -816,52 +1065,4 @@ function Start-CCMClientComplianceSettingsEvaluation
             @{Name="LastEvalTime";Expression={Get-Date $PSItem.LastEvalTime}}
     }
 }
-function Start-CCMPostBuild
-{
-    [CmdletBinding(SupportsShouldProcess=$true,ConfirmImpact='High')]
-    [Alias()]
-    [OutputType()]
-    Param
-    (
-        # Param1 help description
-        [alias('name')]
-        [Parameter(Mandatory=$true, 
-                   ValueFromPipeline=$true,
-                   ValueFromPipelineByPropertyName=$true
-        )]
-        [string[]]$ResourceName,
-        [CimSession]$CimSession = (Get-CimSession -Name 'ccm-*' | Select-Object -First 1)
-
-    )
-
-    Begin
-    {
-        if (-not $CimSession) { Throw "Please use Connect-CCM to connect to CCM management server" }
-        
-        $postbuildColl = Get-CCMCollection -CollectionID AP10088B
-    }
-
-    Process
-    {
-        foreach ($obj in $ResourceName)
-        {
-
-            $null = Get-CCMResource -Name $obj -CimSession $CimSession -OutVariable '+res'
-        
-            if (-not $res)
-            {
-                Write-Error -Message ('Could not find resource with name {0}' -f $obj)
-            }            
-        }
-
-    }
-
-    End
-    {
-        if ($res -and $pscmdlet.ShouldProcess(($res.Name -join "`r`n"), "Add to $postbuildColl.Name"))
-        {
-            Add-CCMMembershipDirect -Resource $res -Collection $postbuildColl -ErrorAction Stop
-        }
-    }
-
-}
+#>

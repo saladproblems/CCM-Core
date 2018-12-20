@@ -1,4 +1,6 @@
-﻿Function Invoke-CCMPackageRerun
+﻿<#This function should be moved to the CCM client module
+
+Function Invoke-CCMPackageRerun
 {
     [cmdletbinding()]
 
@@ -68,3 +70,4 @@
 }
 
 #https://kelleymd.wordpress.com/2015/02/08/run-local-advertisement-with-triggerschedule/
+#>

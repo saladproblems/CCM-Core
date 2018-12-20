@@ -1,4 +1,6 @@
-﻿function Start-CCMClientComplianceSettingsEvaluation
+﻿<#This function should be moved to the client function module
+
+function Start-CCMClientComplianceSettingsEvaluation
 {
     [cmdletbinding()]
     
@@ -41,8 +43,7 @@
             0 = 'Idle'
             1 = 'Evaluated'
             5 = 'Not Evaluated'                                   
-        } 
-        #>
+        }         
 }
 
     Process
@@ -117,3 +118,4 @@
             @{Name="LastEvalTime";Expression={Get-Date $PSItem.LastEvalTime}}
     }
 }
+#>

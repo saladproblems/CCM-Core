@@ -1,7 +1,7 @@
 ﻿Function Invoke-CCMCollectionRefresh
 {
 
-   [cmdletbinding(SupportsShouldProcess=$true)]
+   [cmdletbinding()]
 
     param(
         [Parameter(Mandatory=$true,ValueFromPipeline=$true,Position=0)]

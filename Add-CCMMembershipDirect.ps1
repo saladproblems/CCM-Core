@@ -3,8 +3,10 @@
     [cmdletbinding(SupportsShouldProcess=$true)]
 
     param(
+        [Parameter()]
         [CimInstance[]]$Resource,
 
+        [Parameter()]
         [CimInstance]$Collection
     )
 
@@ -35,11 +37,9 @@
 
     End
     {        
-
         $Collection | Invoke-CimMethod -MethodName AddMemberShipRules -Arguments @{ CollectionRules = [CimInstance[]]$cmRule } -ErrorAction Stop
 
         $cmRule | Out-String | Write-Verbose
-
     }
 
 }

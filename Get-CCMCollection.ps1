@@ -1,5 +1,45 @@
-﻿Function Get-CCMCollection 
+﻿Function Get-CCMCollection
 {
+
+<#
+.SYNOPSIS
+
+Get an SCCM Collection
+
+.DESCRIPTION
+
+Get an SCCM Collection by name or CollectionID, or requery a collection to retrieve lazy properties
+
+.PARAMETER Name
+Specifies the file name.
+
+.PARAMETER Extension
+Specifies the extension. "Txt" is the default.
+
+.INPUTS
+
+None. You cannot pipe objects to Add-Extension.
+
+.OUTPUTS
+
+System.String. Add-Extension returns a string with the extension
+or file name.
+
+.EXAMPLE
+
+C:\PS> Get-CCMCollection *
+Retrieves all collections
+
+.EXAMPLE
+
+C:\PS> Get-CCMCollection *SVR*
+Returns all collections with SVR in the name
+
+.LINK
+
+https://github.com/saladproblems/CCM-Core
+
+#>
     
     [cmdletbinding()]
 
@@ -68,11 +108,11 @@
 
             #Add handling piping in a resource here
         }
-          
+        
+        Get-CimInstance @cimHash -ClassName SMS_Collection -Filter ($cimFilter -join ' OR ') |
+            Add-CCMClassType
+
     }
-    
     End
-    {
-        Get-CimInstance @cimHash -ClassName SMS_Collection -Filter ($cimFilter -join ' OR ') | Add-CimClassType
-    }
+    {}
 }

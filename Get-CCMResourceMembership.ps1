@@ -18,6 +18,8 @@
     {     
         $cimHash = $Global:CCMConnection.PSObject.Copy()
 
+        $cimHash['ClassName'] = 'SMS_FullCollectionMembership'
+
         if ($Property) { $cimHash['Property'] = $Property }
         
         #$sbGetCollName = { (Get-CCMCollection -CollectionID $PSItem.CollectionID -Property name).Name}
@@ -31,7 +33,7 @@
             {
                 Foreach ($obj in $Name)
                 {
-                    Get-CCMCollection -CollectionID (Get-CimInstance @cimHash -ClassName SMS_FullCollectionMembership -filter "Name='$obj'" -Property $Property).CollectionID| 
+                    Get-CCMCollection -CollectionID (Get-CimInstance @cimHash -filter "Name='$obj'").CollectionID | 
                         Sort-Object -Property Name
                         
                 }
@@ -42,7 +44,7 @@
             {
                 Foreach ($obj in $ResourceID)
                 {
-                    Get-CCMCollection -CollectionID (Get-CimInstance @cimHash -ClassName SMS_FullCollectionMembership -filter "ResourceID='$obj'" -Property $Property) | 
+                    Get-CCMCollection -CollectionID (Get-CimInstance @cimHash -filter "ResourceID='$obj'") | 
                         Sort-Object -Property Name
                 }
             }

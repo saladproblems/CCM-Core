@@ -1,7 +1,7 @@
 ﻿Function Get-CCMResource 
 {
     
-    [cmdletbinding(SupportsShouldProcess=$true)]
+    [cmdletbinding()]
 
     param(
 
@@ -18,8 +18,13 @@
 
     Begin
     {
-            $cimHash = $Global:CCMConnection.PSObject.Copy()
-    }
+        try {
+            $cimHash = $Global:CCMConnection.PSObject.Copy()   
+        }
+        catch {
+            Throw 'Not connected to CCM, reconnect using Connect-CCM'
+        }
+    } 
 
     Process
     {
