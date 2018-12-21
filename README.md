@@ -1,5 +1,5 @@
 # CCM-Core
-CIM-Based CCM Management module with PSCore compatibility
+A lightweight module for managing SCCM resources and collections that relies on CIM cmdlets and is compatible with PowerShell 6.0
 
 Purpose:
 
