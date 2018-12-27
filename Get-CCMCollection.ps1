@@ -1,7 +1,6 @@
-﻿Function Get-CCMCollection
-{
+﻿Function Get-CCMCollection {
 
-<#
+    <#
 .SYNOPSIS
 
 Get an SCCM Collection
@@ -40,69 +39,58 @@ Returns all collections with SVR in the name
 https://github.com/saladproblems/CCM-Core
 
 #>
-    
+    [Alias('Get-SMS_Collection')]
     [cmdletbinding()]
 
     param(
 
-        [Parameter(Mandatory=$true,ValueFromPipeline=$true,Position=0,ParameterSetName='Name')]
-        [Alias('ClientName','CollectionName')]
-        [ValidateCount(1,500)]
+        [Parameter(Mandatory = $true, ValueFromPipeline = $true, Position = 0, ParameterSetName = 'Name')]
+        [Alias('ClientName', 'CollectionName')]
+        [ValidateCount(1, 500)]
         [string[]]$Name,
 
-        [Parameter(Mandatory=$true,ValueFromPipelineByPropertyName=$true,Position=1,ParameterSetName='CollectionID')]
-        [ValidateCount(1,500)]
+        [Parameter(Mandatory = $true, ValueFromPipelineByPropertyName = $true, Position = 1, ParameterSetName = 'CollectionID')]
+        [ValidateCount(1, 500)]
         [string[]]$CollectionID,
 
-        [Parameter(Mandatory=$true,ParameterSetName='Filter')]
+        [Parameter(Mandatory = $true, ParameterSetName = 'Filter')]
         [string]$Filter,
 
-        [string[]]$Property = @( 'Name','CollectionID','LastChangeTime','LimitToCollectionID','LimitToCollectionname','MemberCount' )
+        [string[]]$Property = @( 'Name', 'CollectionID', 'LastChangeTime', 'LimitToCollectionID', 'LimitToCollectionname', 'MemberCount' )
 
     )
 
-    Begin
-    {       
+    Begin {       
         $cimHash = $Global:CCMConnection.PSObject.Copy()
 
-        if ($Property)
-        {
+        if ($Property) {
             $cimHash.Property = $Property
         }                
     }
 
-    Process
-    {
+    Process {
 
         Write-Verbose $PSCmdlet.ParameterSetName
 
-        $cimFilter = Switch ($PSCmdlet.ParameterSetName)
-        {
-            'Name'
-            {
-                switch -Regex ($Name)
-                {
-                    '\*'
-                    { 
+        $cimFilter = Switch ($PSCmdlet.ParameterSetName) {
+            'Name' {
+                switch -Regex ($Name) {
+                    '\*' { 
                         "Name LIKE '$($PSItem -replace '\*','%')'"                        
                     }
                         
-                    Default
-                    {
+                    Default {
                         "Name='$PSItem'"
                     }
                 }                
             }
 
-            'CollectionID'
-            {
-                Foreach ($obj in $CollectionID)
-                {                   
+            'CollectionID' {
+                Foreach ($obj in $CollectionID) {                   
                     "CollectionID='$obj'"
                 }
             }
-            'Filter'
-            {
+            'Filter' {
                 $Filter
             }
 

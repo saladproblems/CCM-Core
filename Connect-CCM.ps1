@@ -1,9 +1,8 @@
-﻿function Connect-CCM
-{
+﻿function Connect-CCM {
     [CmdletBinding()]
     Param
     (
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory = $true)]
         [string]$ComputerName,
 
         [Parameter()]
@@ -14,13 +13,11 @@
         $Credential
     )
 
-    process
-    {
+    process {
         Write-Verbose "Looking for CIM Session 'ccmConnection'"
         $cimSession = Get-CimSession -Name "ccmConnection" -ErrorAction SilentlyContinue | Select-Object -First 1
 
-        if ($Reconnect)
-        {
+        if ($Reconnect) {
             $cimSession | Remove-CimSession
         }
         
@@ -29,21 +26,18 @@
             NameSpace = 'root/sms'
         }
 
-        $siteName = try
-        {
+        $siteName = try {
             (Get-CimInstance @siteParm -CimSession $cimSession)[0].NamespacePath -replace '^.+site_'
         }
-        catch
-        {
+        catch {
             $cimSession = New-CimSession -ComputerName $ComputerName -Name "ccmConnection" -Credential $Credential
             (Get-CimInstance @siteParm -CimSession $cimSession)[0].NamespacePath -replace '^.+site_'
         }
     }
-    end
-    {
+    end {
         Set-Variable -Name global:CCMConnection -Value @{
             CimSession = $cimSession
-            NameSpace = 'root\sms\site_{0}' -f $siteName
+            NameSpace  = 'root\sms\site_{0}' -f $siteName
         }
     }
     

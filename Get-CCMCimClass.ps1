@@ -1,14 +1,13 @@
-Function Get-CCMCimClass
-{   
+Function Get-CCMCimClass {   
+    [Alias('Get-CCMClass')]
     [cmdletbinding()]
     param(
-        [Parameter(Mandatory,Position=0)]
+        [Parameter(Mandatory, Position = 0)]
         [Alias('Class')]
         [string]$ClassName
     )
 
-    Begin
-    {
+    Begin {
         try {
             $cimHash = $Global:CCMConnection.PSObject.Copy()   
         }
@@ -17,8 +16,7 @@ Function Get-CCMCimClass
         }       
     }
 
-    Process
-    {
+    Process {
         Get-CimClass @cimHash @PSBoundParameters
     }
 }

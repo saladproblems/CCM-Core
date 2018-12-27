@@ -1,11 +1,10 @@
-Function Get-CCMScriptExecutionStatus
-{
+Function Get-CCMScriptExecutionStatus {
     [cmdletbinding()]
 
     [alias('Get-CCMScriptsExecutionStatus')]
     
     param(
-        [Parameter(ValueFromPipeline=$true)]
+        [Parameter(ValueFromPipeline = $true)]
         [ciminstance[]]
         $Script,
 
@@ -19,8 +18,7 @@ Function Get-CCMScriptExecutionStatus
 
     )
 
-    begin
-    {
+    begin {
         try {
             [hashtable]$cimHash = $Global:CCMConnection.PSObject.Copy()   
         }
@@ -33,14 +31,12 @@ Function Get-CCMScriptExecutionStatus
         $cimArray = [System.Collections.ArrayList]::new()
     }
 
-    process
-    {
+    process {
         $cimArray.AddRange([ciminstance[]]$Script)
     }
 
-    end
-    {
-        $filter = $cimArray.ForEach({ 'ScriptGUID = "{0}"' -f $PSItem.ScriptGuid }) -join ' OR '
+    end {
+        $filter = $cimArray.ForEach( { 'ScriptGUID = "{0}"' -f $PSItem.ScriptGuid }) -join ' OR '
         
         Get-CimInstance @cimHash -Filter $filter
     }

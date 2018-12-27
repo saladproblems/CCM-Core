@@ -1,21 +1,20 @@
-Function Get-CCMCimInstance
-{   
+Function Get-CCMCimInstance {   
+    [Alias('Get-CCMInstance')]
     [cmdletbinding()]
     param(
-        [Parameter(Mandatory,Position=0)]
+        [Parameter(Mandatory, Position = 0)]
         [Alias('Class')]
         [string]$ClassName,
 
         [Parameter()]
         [string]$Filter,
 
-        [Parameter(Position=1)]
+        [Parameter(Position = 1)]
         [Alias('Properties')]
         [string[]]$Property
     )
 
-    Begin
-    {
+    Begin {
         try {
             $cimHash = $Global:CCMConnection.PSObject.Copy()   
         }
@@ -24,8 +23,7 @@ Function Get-CCMCimInstance
         }        
     }
 
-    Process
-    {
+    Process {
         Get-CimInstance @cimHash @PSBoundParameters
     }
 }

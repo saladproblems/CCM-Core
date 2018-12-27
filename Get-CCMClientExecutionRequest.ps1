@@ -1,15 +1,14 @@
-﻿function Get-CCMClientExecutionRequest
-{
+﻿function Get-CCMClientExecutionRequest {
     param (
         
-        [Parameter(ValueFromPipeline=$true,
-            ValueFromPipelineByPropertyName=$true,
-            ParameterSetName='ComputerName',
-            Position=0,
-            Mandatory=$true)]
+        [Parameter(ValueFromPipeline = $true,
+            ValueFromPipelineByPropertyName = $true,
+            ParameterSetName = 'ComputerName',
+            Position = 0,
+            Mandatory = $true)]
         [string]$ComputerName,
 
-        [Parameter(ParameterSetName='ComputerName')]
+        [Parameter(ParameterSetName = 'ComputerName')]
         [PSCredential]$Credential 
 
     )
@@ -17,23 +16,18 @@
     Begin
     {}
 
-    Process
-    {
-        if (-not $CimSession)
-        {
+    Process {
+        if (-not $CimSession) {
         
-            try
-            {
+            try {
                 $CimSession = Get-CimSession -ComputerName $ComputerName -ErrorAction Stop
             }
-            catch
-            {
+            catch {
                 
                 $cimParm = @{
                     ComputerName = $ComputerName
                 }
-                if ($Credential)
-                {
+                if ($Credential) {
                     $cimParm['Credential'] = $Credential
                 }
 
@@ -44,12 +38,12 @@
         
         $cimParm = @{            
             OutVariable = 'update'
-            NameSpace = 'root\ccm\SoftMgmtAgent'
-            ClassName = 'CCM_ExecutionRequestEx'
-            CimSession = $CimSession
+            NameSpace   = 'root\ccm\SoftMgmtAgent'
+            ClassName   = 'CCM_ExecutionRequestEx'
+            CimSession  = $CimSession
         }
 
-        Get-CimInstance @cimParm | ForEach-Object { $PSItem.PSObject.TypeNames.Insert(0,'Microsoft.Management.Infrastructure.CimInstance.CCM_ExecutionRequestEx') ; $PSItem }
+        Get-CimInstance @cimParm | ForEach-Object { $PSItem.PSObject.TypeNames.Insert(0, 'Microsoft.Management.Infrastructure.CimInstance.CCM_ExecutionRequestEx') ; $PSItem }
         
     }
 }
