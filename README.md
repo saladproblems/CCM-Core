@@ -6,9 +6,10 @@ Purpose:
 * Provide a faster, lightweight alternative to the Microsoft SCCM module
 * Allow more complex WQL filtering than is offered by the SCCM module
 
-Design Standards:
-* When possible, return a cmdlet's default output type. Return cim instances and classes, and avoid custom object types
+Design Goals:
+* When possible, return a cmdlet's default output type. Return cim instances, and avoid custom object types (no PSObjects)
 	* All output should work with built-in CIM functionality - Get-CimInstance, Set-CimInstance, Remove-CimInstance, Invoke-CimMethod should work with output
+* Every function should have Filter and Property parameters
 * Use format and type files to manipulate output without changing object types
 
 ### Primary Functions:
