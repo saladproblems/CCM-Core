@@ -25,9 +25,9 @@ Design Standards:
 - Get-CCMScript
 - Get-CCMScriptExecutionStatus
 - Get-CCMUserMachineRelationship
-- Get-NthWeekDay (Get-PatchTuesday)
 - Invoke-CCMCollectionRefresh
 - New-CCMCollection
 
 ### SupportFunctions
 - Add-CCMClassType
+- Get-NthWeekDay (Get-PatchTuesday)
