@@ -105,14 +105,14 @@
                 </TableRowEntries>
             </TableControl>
         </View>
-            <View>
+        <View>
             <Name>SMS_Scripts</Name>
             <ViewSelectedBy>
                 <TypeName>Microsoft.Management.Infrastructure.CimInstance#SMS_Scripts</TypeName>
             </ViewSelectedBy>
             <TableControl>
                 <TableHeaders>
-                    <TableColumnHeader>                        
+                    <TableColumnHeader>
                         <Width>45</Width>
                     </TableColumnHeader>
                     <TableColumnHeader>
@@ -150,14 +150,14 @@
                 </TableRowEntries>
             </TableControl>
         </View>
-            <View>
+        <View>
             <Name>SMS_UserMachineRelationship</Name>
             <ViewSelectedBy>
                 <TypeName>Microsoft.Management.Infrastructure.CimInstance#SMS_UserMachineRelationship</TypeName>
             </ViewSelectedBy>
             <TableControl>
                 <TableHeaders>
-                    <TableColumnHeader>                        
+                    <TableColumnHeader>
                     </TableColumnHeader>
                     <TableColumnHeader>
                     </TableColumnHeader>
@@ -191,14 +191,55 @@
                 </TableRowEntries>
             </TableControl>
         </View>
-            <View>
+        <View>
+            <Name>SMS_ObjectContainerNode</Name>
+            <ViewSelectedBy>
+                <TypeName>Microsoft.Management.Infrastructure.CimInstance#root/sms/site_qtc/SMS_ObjectContainerNode</TypeName>
+            </ViewSelectedBy>
+            <TableControl>
+                <TableHeaders>
+                    <TableColumnHeader>
+                    </TableColumnHeader>
+                    <TableColumnHeader>
+                    </TableColumnHeader>
+                    <TableColumnHeader>
+                    </TableColumnHeader>
+                    <TableColumnHeader>
+                    </TableColumnHeader>
+                    <TableColumnHeader>
+                    </TableColumnHeader>
+                </TableHeaders>
+                <TableRowEntries>
+                    <TableRowEntry>
+                        <TableColumnItems>
+                            <TableColumnItem>
+                                <PropertyName>Name</PropertyName>
+                            </TableColumnItem>
+                            <TableColumnItem>
+                                <PropertyName>ObjectTypeName</PropertyName>
+                            </TableColumnItem>
+                            <TableColumnItem>
+                                <PropertyName>ContainerNodeID</PropertyName>
+                            </TableColumnItem>
+                            <TableColumnItem>
+                                <PropertyName>ParentContainerNodeID</PropertyName>
+                            </TableColumnItem>
+                            <TableColumnItem>
+                                <PropertyName>SearchFolder</PropertyName>
+                            </TableColumnItem>
+                        </TableColumnItems>
+                    </TableRowEntry>
+                </TableRowEntries>
+            </TableControl>
+        </View>
+        <View>
             <Name>SMS_FullCollectionMembership</Name>
             <ViewSelectedBy>
                 <TypeName>Microsoft.Management.Infrastructure.CimInstance#SMS_FullCollectionMembership</TypeName>
             </ViewSelectedBy>
             <TableControl>
                 <TableHeaders>
-                    <TableColumnHeader>                        
+                    <TableColumnHeader>
                     </TableColumnHeader>
                     <TableColumnHeader>
                     </TableColumnHeader>
@@ -226,6 +267,47 @@
                             </TableColumnItem>
                             <TableColumnItem>
                                 <PropertyName>SiteCode</PropertyName>
+                            </TableColumnItem>
+                        </TableColumnItems>
+                    </TableRowEntry>
+                </TableRowEntries>
+            </TableControl>
+        </View>
+        <View>
+            <Name>SMS_Application</Name>
+            <ViewSelectedBy>
+                <TypeName>Microsoft.Management.Infrastructure.CimInstance#root/sms/site_qtc/SMS_Application</TypeName>
+            </ViewSelectedBy>
+            <TableControl>
+                <TableHeaders>
+                    <TableColumnHeader>
+                    </TableColumnHeader>
+                    <TableColumnHeader>
+                    </TableColumnHeader>
+                    <TableColumnHeader>
+                    </TableColumnHeader>
+                    <TableColumnHeader>
+                    </TableColumnHeader>
+                    <TableColumnHeader>
+                    </TableColumnHeader>
+                </TableHeaders>
+                <TableRowEntries>
+                    <TableRowEntry>
+                        <TableColumnItems>
+                            <TableColumnItem>
+                                <PropertyName>LocalizedDisplayName</PropertyName>
+                            </TableColumnItem>
+                            <TableColumnItem>
+                                <PropertyName>SoftwareVersion</PropertyName>
+                            </TableColumnItem>
+                            <TableColumnItem>
+                                <PropertyName>CI_ID</PropertyName>
+                            </TableColumnItem>
+                            <TableColumnItem>
+                                <PropertyName>LastModifiedBy</PropertyName>
+                            </TableColumnItem>
+                            <TableColumnItem>
+                                <PropertyName>CI_UniqueID</PropertyName>
                             </TableColumnItem>
                         </TableColumnItems>
                     </TableRowEntry>

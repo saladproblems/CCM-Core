@@ -7,6 +7,7 @@ $sbCCMGetCimParm = {
      }
  }
  
+ #region Force confirm prompt for Remove-CimInstance
  <#
  I think this is bad practice, but I don't have a good workaround - Remove-CimInstance can delete any CCM objects
  piped to it. Users can override this, but this will make it a bit harder to accidentally remove collections, resources, etc.
@@ -15,6 +16,7 @@ $sbCCMGetCimParm = {
       $PSDefaultParameterValues.Add("Remove-CimInstance:Confirm",$true)
  }
  catch{}
+#end region Force confirm prompt
 
 #using Add-Type instead of Enum because I want to group by namespace
 Add-Type -TypeDefinition @'
