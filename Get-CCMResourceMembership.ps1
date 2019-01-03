@@ -1,17 +1,30 @@
 ﻿Function Get-CCMResourceMembership {
     [Alias('Get-SMS_FullCollectionMembership')]
-    [cmdletbinding(SupportsShouldProcess = $true)]
+    [cmdletbinding(DefaultParameterSetName = 'inputObject')]
 
     param(
+        #Specifies an the members an SCCM resource is a member of by the resource's name or ID.
+        [Parameter(ValueFromPipeline, ValueFromPipelineByPropertyName, Position = 0, ParameterSetName = 'Identity')]
+        [Alias('ClientName', 'ResourceName', 'ResourceID', 'Name')]
+        [WildcardPattern[]]$Identity,
+        
+        #Specifies a CIM instance object to use as input, must be SMS_R_System (returned by "get-CCMResource")
+        [Parameter(ValueFromPipeline, Mandatory, ParameterSetName = 'inputObject')]
+        [ValidateScript( {$PSItem.CimClass.CimClassName -eq 'SMS_R_System'})]
+        [ciminstance]$inputObject,
 
-        [Parameter(ValueFromPipeline = $true, ValueFromPipelineByPropertyName = $true, Position = 1, ParameterSetName = 'Name')]
-        [Alias('ClientName', 'ResourceName')]
-        [string[]]$Name,
+        #Restrict results to only collections with a ServiceWindow count greater than 0
+        [Parameter()]
+        [alias('HasServiceWinow')]
+        [switch]$HasMaintenanceWindow,
 
-        [Parameter(ValueFromPipeline = $true, ValueFromPipelineByPropertyName = $true, Position = 1, ParameterSetName = 'ResourceID')]
-        [int[]]$ResourceID,
+        #Specifies a set of instance properties to retrieve.
+        [Parameter()]
+        [string[]]$Property,
 
-        [string[]]$Property
+        # Parameter help description
+        [Parameter()]
+        [switch]$ShowResourceName
     )
 
     Begin {     
@@ -20,28 +33,37 @@
         $cimHash['ClassName'] = 'SMS_FullCollectionMembership'
 
         if ($Property) { $cimHash['Property'] = $Property }
-        
-        #$sbGetCollName = { (Get-CCMCollection -CollectionID $PSItem.CollectionID -Property name).Name}
+
+        $getCollParm = @{ HasMaintenanceWindow = $HasMaintenanceWindow.IsPresent }
+
+        if ($Property) {
+            $getCollParm['Property'] = $Property
+        }
     }
 
     Process {
+        Write-Debug "Choosing parameterset: '$($PSCmdlet.ParameterSetName)'"
         Switch ($PSCmdlet.ParameterSetName) {
-            'Name' {
-                Foreach ($obj in $Name) {
-                    Get-CCMCollection -CollectionID (Get-CimInstance @cimHash -filter "Name='$obj'").CollectionID | 
-                        Sort-Object -Property Name
-                        
+            'Identity' {
+                $resourceMembership = switch -Regex ($Identity.ToWql()) {
+                    '^(\d|%)+$' {
+                        Get-CimInstance @cimHash -Filter ('ResourceID LIKE "{0}"' -f $PSItem)
+                    }
+                    default {
+                        Get-CimInstance @cimHash -filter ('Name LIKE "{0}"' -f $PSItem)
+                    }
                 }
-
-            }
-
-            'ResourceID' {
-                Foreach ($obj in $ResourceID) {
-                    Get-CCMCollection -CollectionID (Get-CimInstance @cimHash -filter "ResourceID='$obj'") | 
-                        Sort-Object -Property Name
+                if ($ShowResourceName.IsPresent) {
+                    Write-Host "Collection memberships for: '$($resourceMembership[0].Name)'" -ForegroundColor Green
                 }
+                Get-CCMCollection -Identity $resourceMembership.CollectionID @getCollParm
             }
-        }
-           
+            'inputObject' {
+                if ($ShowResourceName.IsPresent) {
+                    Write-Host "Collection memberships for '$($inputObject.ResourceID)':" -ForegroundColor Green
+                }
+                $inputObject.ResourceID | Get-CCMResourceMembership @getCollParm
+            }
+        }   
     }
 }
