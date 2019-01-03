@@ -1,16 +1,43 @@
 ﻿Function Get-CCMResource {
+<#
+.SYNOPSIS
+
+Get an SCCM Resource
+
+.DESCRIPTION
+
+Get an SCCM Resource by Name or ResourceID
+
+.OUTPUTS
+Microsoft.Management.Infrastructure.CimInstance#root/sms/site_qtc/SMS_R_System
+
+.EXAMPLE
+C:\PS> Get-CCMResource *
+Retrieves all Resources
+
+.EXAMPLE
+C:\PS> Get-CCMResource *SVR*
+Returns all resources with SVR in the name
+
+.LINK
+
+https://github.com/saladproblems/CCM-Core
+
+#>
     [Alias('Get-SMS_R_System')]
-    [cmdletbinding()]
+    [cmdletbinding(DefaultParameterSetName = 'inputObject')]
 
     param(
+        #Specifies an SCCM Resource object by providing the 'Name' or 'ResourceID'.
+        [Parameter(ValueFromPipeline = $true, Position = 0, ParameterSetName = 'Identity')]
+        [Alias('Name','ClientName','ResourceName''ResourceID')]
+        [WildcardPattern[]]$Identity,
 
-        [Parameter(ValueFromPipeline = $true, Position = 0, ParameterSetName = 'Name')]
-        [Alias('ClientName', 'ResourceName')]
-        [string[]]$Name,
+        #Specifies a CIM instance object to use as input.
+        [Parameter(ValueFromPipeline, Mandatory, ParameterSetName = 'inputObject')]
+        [ciminstance]$inputObject,
 
-        [Parameter(ValueFromPipelineByPropertyName = $true, Position = 0, ParameterSetName = 'ResourceID')]
-        [int32[]]$ResourceID,
-
+        #Specifies a where clause to use as a filter. Specify the clause in either the WQL or the CQL query language.   
         [Parameter(ParameterSetName = 'Filter')]
         [string]$Filter
     )
@@ -22,29 +49,27 @@
         catch {
             Throw 'Not connected to CCM, reconnect using Connect-CCM'
         }
-    } 
+        $cimHash['ClassName'] = 'SMS_R_System'        
+    }
 
     Process {
         Switch ($PSCmdlet.ParameterSetName) {
-            'Name' {
-                Foreach ($obj in $Name) {
-                    if ($obj -match '\*') {
-                        Get-CimInstance @cimHash -ClassName SMS_R_System -filter "Name LIKE '$($obj -replace '\*','%')'"
+            'Identity' {
+                switch -Regex ($Identity.ToWql()) {
+                   '^(\d|%)+$' {
+                        Get-CimInstance @cimHash -Filter ('ResourceID LIKE "{0}"' -f $PSItem)
                     }
-                    else {
-                        Get-CimInstance @cimHash -ClassName SMS_R_System -filter "Name='$obj'"
+                    default {
+                        Get-CimInstance @cimHash -filter ('Name LIKE "{0}"' -f $PSItem)
                     }
                 }
-
             }
-            'ResourceID' {
-                Foreach ($obj in $ResourceID) {
-                    Get-CimInstance @cimHash -ClassName SMS_R_System -filter "ResourceID='$obj'"
-                }
+            'inputObject' {
+                $inputObject | Get-CimInstance
             }
             'Filter' {
                 Foreach ($obj in $Filter) {
-                    Get-CimInstance @cimHash -ClassName SMS_R_System -filter $Filter
+                    Get-CimInstance @cimHash -filter $Filter
                 }
             }
         }

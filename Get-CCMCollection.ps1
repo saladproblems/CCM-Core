@@ -1,13 +1,13 @@
 ﻿Function Get-CCMCollection {
 
-    <#
+<#
 .SYNOPSIS
 
 Get an SCCM Collection
 
 .DESCRIPTION
 
-Get an SCCM Collection by name or CollectionID, or requery a collection to retrieve lazy properties
+Get an SCCM Collection by Name or CollectionID
 
 .PARAMETER Name
 Specifies the file name.
@@ -25,14 +25,16 @@ System.String. Add-Extension returns a string with the extension
 or file name.
 
 .EXAMPLE
-
 C:\PS> Get-CCMCollection *
 Retrieves all collections
 
 .EXAMPLE
-
 C:\PS> Get-CCMCollection *SVR*
 Returns all collections with SVR in the name
+
+.EXAMPLE
+C:\PS> Get-CCMCollection *SVR* -HasMaintenanceWindow
+Returns all collections with SVR in the name that have maintenance windows
 
 .LINK
 
@@ -43,19 +45,26 @@ https://github.com/saladproblems/CCM-Core
     [cmdletbinding()]
 
     param(
+        #Specifies a CIM instance object to use as input.
+        [Parameter(Mandatory, ValueFromPipeline, ParameterSetName = 'CimInstance')]
+        [ciminstance[]]$CimInstance,
 
-        [Parameter(Mandatory = $true, ValueFromPipeline = $true, Position = 0, ParameterSetName = 'Name')]
-        [Alias('ClientName', 'CollectionName')]
-        [ValidateCount(1, 500)]
-        [string[]]$Name,
+        #Specifies an SCCM collection object by providing the collection name or ID.
+        [Parameter(Mandatory,ValueFromPipeline, ValueFromPipelineByPropertyName, Position = 0, ParameterSetName = 'Identity')]
+        [Alias('ClientName', 'CollectionName','CollectionID','Name')]
+        [string[]]$Identity,
 
-        [Parameter(Mandatory = $true, ValueFromPipelineByPropertyName = $true, Position = 1, ParameterSetName = 'CollectionID')]
-        [ValidateCount(1, 500)]
-        [string[]]$CollectionID,
-
-        [Parameter(Mandatory = $true, ParameterSetName = 'Filter')]
+        #Specifies a where clause to use as a filter. Specify the clause in the WQL query language.
+        [Parameter(Mandatory, ParameterSetName = 'Filter')]
         [string]$Filter,
 
+        #Only return collections with service windows - Maintenance windows are a lazy property, requery to view maintenance window info
+        [Parameter()]
+        [alias('HasServiceWindow')]
+        [switch]$HasMaintenanceWindow,
+
+        #Specifies a set of instance properties to retrieve.
+        [Parameter()]
         [string[]]$Property = @( 'Name', 'CollectionID', 'LastChangeTime', 'LimitToCollectionID', 'LimitToCollectionname', 'MemberCount' )
 
     )
@@ -64,42 +73,41 @@ https://github.com/saladproblems/CCM-Core
         $cimHash = $Global:CCMConnection.PSObject.Copy()
 
         if ($Property) {
-            $cimHash.Property = $Property
-        }                
+            $cimHash['Property'] = $Property
+        }
+        
+        if ($HasMaintenanceWindow.IsPresent) {
+            $HasMaintenanceWindowSuffix = ' AND (ServiceWindowsCount > 0)'
+        }
     }
 
     Process {
-
-        Write-Verbose $PSCmdlet.ParameterSetName
-
-        $cimFilter = Switch ($PSCmdlet.ParameterSetName) {
-            'Name' {
-                switch -Regex ($Name) {
+        Write-Debug "Chose parameterset '$($PSCmdlet.ParameterSetName)'"
+        Switch ($PSCmdlet.ParameterSetName) {
+            'Identity' {
+                $cimFilter = switch -Regex ($Identity) {
                     '\*' { 
-                        "Name LIKE '$($PSItem -replace '\*','%')'"                        
+                        'Name LIKE "{0}" OR CollectionID LIKE "{0}"' -f ($PSItem -replace '\*','%')
                     }
                         
                     Default {
-                        "Name='$PSItem'"
+                        'Name = "{0}" OR CollectionID = "{0}"' -f $PSItem
                     }
                 }                
             }
-
-            'CollectionID' {
-                Foreach ($obj in $CollectionID) {                   
-                    "CollectionID='$obj'"
-                }
-            }
             'Filter' {
-                $Filter
+                Get-CimInstance @cimHash -ClassName SMS_Collection -Filter $Filter
             }
-
-            #Add handling piping in a resource here
+            'CimInstance' {
+                $CimInstance | Get-CimInstance
+            }
         }
         
-        Get-CimInstance @cimHash -ClassName SMS_Collection -Filter ($cimFilter -join ' OR ') |
-            Add-CCMClassType
-
+        if ($cimFilter) {
+            $cimFilter = '({0}){1}' -f ($cimFilter -join ' OR '),$HasMaintenanceWindowSuffix
+            Get-CimInstance @cimHash -ClassName SMS_Collection -Filter $cimFilter |
+                Add-CCMClassType
+        }
     }
     End
     {}
