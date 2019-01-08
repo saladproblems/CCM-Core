@@ -25,13 +25,13 @@ Function Invoke-CCMClientScheduleUpdate
             {00000000-0000-0000-0000-000000000110},DCM policy
 
 '@ | ConvertFrom-Csv
-        
+
     }
 
 
     Process
     {
-        
+
         foreach ($aComputerName in $ComputerName)
         {
             $cimParm = @{
@@ -41,9 +41,9 @@ Function Invoke-CCMClientScheduleUpdate
 
             if ($Credential){ $cimParm['Credential'] = $Credential }
             if ($UseDCOM) { $cimParm['SessionOption'] = New-CimSessionOption -Protocol Dcom }
-            
+
             try
-            {        
+            {
                 $CimSession = Get-CimSession -ComputerName $aComputerName -ErrorAction Stop
             }
 
@@ -51,31 +51,31 @@ Function Invoke-CCMClientScheduleUpdate
             {
                 $CimSession = New-CimSession @cimParm
             }
-            if (-not $CimSession) 
-            { 
+            if (-not $CimSession)
+            {
                 Write-Warning "Could not connect to $ComputerName"
                 continue
             }
 
             $taskList | ForEach-Object {
-                  
+
                 $x++
-                           
+
                 $compProgressParm = @{
-                    CurrentOperation = $PSItem.Task 
-                    Activity = "$aComputerName - Triggering CCM client update Schedules" 
+                    CurrentOperation = $PSItem.Task
+                    Activity = "$aComputerName - Triggering CCM client update Schedules"
                     Status = "$x of $($taskList.Count)"
                     PercentComplete = 100*($x/$taskList.Count)
                 }
-                                
+
                 Write-Progress @compProgressParm
 
                 $taskProgressParm = @{
-                    CimSession = $CimSession 
+                    CimSession = $CimSession
                     Namespace = 'root/ccm'
                     Class = 'SMS_CLIENT'
                     Name = 'TriggerSchedule'
-                    Arguments = @{ sScheduleID = $PSItem.GUID } 
+                    Arguments = @{ sScheduleID = $PSItem.GUID }
                     ErrorAction = 'SilentlyContinue'
                 }
 

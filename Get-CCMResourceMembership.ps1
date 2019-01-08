@@ -7,7 +7,7 @@
         [Parameter(ValueFromPipeline, ValueFromPipelineByPropertyName, Position = 0, ParameterSetName = 'Identity')]
         [Alias('ClientName', 'ResourceName', 'ResourceID', 'Name')]
         [WildcardPattern[]]$Identity,
-        
+
         #Specifies a CIM instance object to use as input, must be SMS_R_System (returned by "get-CCMResource")
         [Parameter(ValueFromPipeline, Mandatory, ParameterSetName = 'inputObject')]
         [ValidateScript( {$PSItem.CimClass.CimClassName -eq 'SMS_R_System'})]
@@ -27,7 +27,7 @@
         [switch]$ShowResourceName
     )
 
-    Begin {     
+    Begin {
         $cimHash = $Global:CCMConnection.PSObject.Copy()
 
         $cimHash['ClassName'] = 'SMS_FullCollectionMembership'
@@ -64,6 +64,6 @@
                 }
                 $inputObject.ResourceID | Get-CCMResourceMembership @getCollParm
             }
-        }   
+        }
     }
 }

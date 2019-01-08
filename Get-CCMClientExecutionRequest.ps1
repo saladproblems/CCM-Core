@@ -1,6 +1,5 @@
 ﻿function Get-CCMClientExecutionRequest {
     param (
-        
         [Parameter(ValueFromPipeline = $true,
             ValueFromPipelineByPropertyName = $true,
             ParameterSetName = 'ComputerName',
@@ -9,7 +8,7 @@
         [string]$ComputerName,
 
         [Parameter(ParameterSetName = 'ComputerName')]
-        [PSCredential]$Credential 
+        [PSCredential]$Credential
 
     )
 
@@ -18,25 +17,20 @@
 
     Process {
         if (-not $CimSession) {
-        
             try {
                 $CimSession = Get-CimSession -ComputerName $ComputerName -ErrorAction Stop
-            }
-            catch {
-                
+            } catch {
                 $cimParm = @{
                     ComputerName = $ComputerName
                 }
                 if ($Credential) {
                     $cimParm['Credential'] = $Credential
                 }
-
                 $CimSession = New-CimSession @cimParm -ErrorAction Stop
             }
-            
         }
-        
-        $cimParm = @{            
+
+        $cimParm = @{
             OutVariable = 'update'
             NameSpace   = 'root\ccm\SoftMgmtAgent'
             ClassName   = 'CCM_ExecutionRequestEx'
@@ -44,6 +38,5 @@
         }
 
         Get-CimInstance @cimParm | ForEach-Object { $PSItem.PSObject.TypeNames.Insert(0, 'Microsoft.Management.Infrastructure.CimInstance.CCM_ExecutionRequestEx') ; $PSItem }
-        
     }
 }

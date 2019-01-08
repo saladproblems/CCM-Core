@@ -10,24 +10,23 @@ Function Get-CCMUserMachineRelationship {
 
         [Parameter(ParameterSetName = 'Filter')]
         [string]$Filter,
-        
-        [Parameter()]        
+
+        [Parameter()]
         [switch]$Active
     )
 
     Begin {
         try {
-            $cimHash = $Global:CCMConnection.PSObject.Copy()   
+            $cimHash = $Global:CCMConnection.PSObject.Copy()
             $cimHash['ClassName'] = 'SMS_UserMachineRelationship'
-        }
-        catch {
+        } catch {
             Throw 'Not connected to CCM, reconnect using Connect-CCM'
         }
 
         $filterSuffix = if ($Active.IsPresent) {
             'AND (IsActive = {0})' -f [int]($Active.IsPresent)
         }
-    } 
+    }
 
     Process {
         Switch ($PSCmdlet.ParameterSetName) {
@@ -36,8 +35,7 @@ Function Get-CCMUserMachineRelationship {
                     Write-Verbose $obj
                     $filter = if ($obj -match '\*') {
                         "ResourceName LIKE '{0}' OR UniqueUserName LIKE '{0}' $filterSuffix" -f ($obj -replace '\*', '%' -replace '\\', '\\')
-                    }
-                    else {
+                    } else {
                         "ResourceName = '{0}' OR UniqueUserName = '{0}' $filterSuffix" -f ($obj -replace '\\', '\\')
                     }
                     Get-CimInstance @cimHash -filter $Filter
@@ -47,6 +45,6 @@ Function Get-CCMUserMachineRelationship {
             'Filter' {
                 Get-CimInstance @cimHash -filter $Filter
             }
-        }           
+        }
     }
 }

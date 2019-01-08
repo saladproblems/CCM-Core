@@ -17,18 +17,17 @@ Function Get-NthWeekDay {
 
     begin {
         $FirstDayOfMonth = ([datetime]"$Month/1/$Year").Date
-        $daysInMonth = (($FirstDayOfMonth.AddMonths(1) - $FirstDayOfMonth).totaldays)        
+        $daysInMonth = (($FirstDayOfMonth.AddMonths(1) - $FirstDayOfMonth).totaldays)
     }
     process {
-        
-        $foundDays = 1..$daysInMonth | 
+
+        $foundDays = 1..$daysInMonth |
             ForEach-Object { $FirstDayOfMonth.AddDays($PSItem - 1) } |
             Where-Object { $PSItem.DayOfWeek -eq $DayOfWeek }
-        
+
         try {
             $foundDays[($Nth - 1)]
-        }
-        catch {
+        } catch {
             Write-Error -ErrorAction Stop -Message "Did not find '$Nth'th '$DayOfWeek' in '$Month', '$Year'"
         }
     }

@@ -19,9 +19,8 @@ Function Get-CCMApplication {
 
     Begin {
         try {
-            $cimHash = $Global:CCMConnection.PSObject.Copy()   
-        }
-        catch {
+            $cimHash = $Global:CCMConnection.PSObject.Copy()
+        } catch {
             Throw 'Not connected to CCM, reconnect using Connect-CCM'
         }
 
@@ -52,6 +51,5 @@ Function Get-CCMApplication {
                 }
             }
         }
-
     }
 }

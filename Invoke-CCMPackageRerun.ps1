@@ -12,8 +12,8 @@ Function Invoke-CCMPackageRerun
     Begin
     {
         $rerunSB = {
-        
-            Get-CimInstance -ClassName CCM_SoftwareDistribution -namespace root\ccm\policy\machine/ActualConfig -OutVariable Advertisements | Set-CimInstance -Property @{ 
+
+            Get-CimInstance -ClassName CCM_SoftwareDistribution -namespace root\ccm\policy\machine/ActualConfig -OutVariable Advertisements | Set-CimInstance -Property @{
                 ADV_RepeatRunBehavior = 'RerunAlways'
                 ADV_MandatoryAssignments = $True
             }
@@ -21,7 +21,7 @@ Function Invoke-CCMPackageRerun
             foreach ($a_Advertisement in $Advertisements)
             {
                 Write-Verbose -Message "Searching for schedule for package: $() - $($a_Advertisement.PKG_Name)"
-                Get-CimInstance -ClassName CCM_Scheduler_ScheduledMessage -namespace "ROOT\ccm\policy\machine\actualconfig" -filter "ScheduledMessageID LIKE '$($a_Advertisement.ADV_AdvertisementID)%'" | 
+                Get-CimInstance -ClassName CCM_Scheduler_ScheduledMessage -namespace "ROOT\ccm\policy\machine\actualconfig" -filter "ScheduledMessageID LIKE '$($a_Advertisement.ADV_AdvertisementID)%'" |
                     ForEach-Object {
 
                         $null = Invoke-CimMethod -Namespace 'root\ccm' -ClassName SMS_CLIENT -MethodName TriggerSchedule @{ sScheduleID = $PSItem.ScheduledMessageID }
@@ -33,7 +33,7 @@ Function Invoke-CCMPackageRerun
                         }
                     }
             }
-            
+
         }
 
         $ComputerList = [System.Collections.Generic.List[string]]::new()
@@ -47,11 +47,11 @@ Function Invoke-CCMPackageRerun
     End
     {
         $invokeParm = @{
-                ScriptBlock = $rerunSB                
+                ScriptBlock = $rerunSB
         }
 
         $invokeParm['ComputerName'] = $ComputerList
-        
+
         if ($Credential){
             $invokeParm['Credential'] = $Credential
         }

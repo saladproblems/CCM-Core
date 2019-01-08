@@ -1,5 +1,5 @@
 Function Get-CCMScript {
-    
+
     [cmdletbinding(SupportsShouldProcess = $true)]
 
     param(
@@ -20,11 +20,10 @@ Function Get-CCMScript {
 
     Begin {
         try {
-            $cimHash = $Global:CCMConnection.PSObject.Copy()   
-        }
-        catch {
+            $cimHash = $Global:CCMConnection.PSObject.Copy()
+        } catch {
             Throw 'Not connected to CCM, reconnect using Connect-CCM'
-        }                     
+        }
     }
 
     Process {
@@ -35,8 +34,7 @@ Function Get-CCMScript {
                 Foreach ($obj in $ScriptName) {
                     if ($obj -match '\*') {
                         "ScriptName LIKE '$($obj -replace '\*','%')'" | Write-Output -OutVariable cap
-                    }
-                    else {
+                    } else {
                         "ScriptName = '$obj'"
                     }
                 }
@@ -45,8 +43,7 @@ Function Get-CCMScript {
                 Foreach ($obj in $Author) {
                     if ($obj -match '\*') {
                         "Author LIKE '$($obj -replace '\*','%')'" | Write-Output -OutVariable cap
-                    }
-                    else {
+                    } else {
                         "Author = '$obj'"
                     }
                 }
@@ -62,11 +59,11 @@ Function Get-CCMScript {
                 Foreach ($obj in $Filter) {
                     $Filter
                 }
-            }           
+            }
         }
 
         #"\" is an escape character in WQL
         Get-CimInstance @cimHash -ClassName SMS_Scripts -Filter ($cimFilter -join ' OR ' -replace '\\', '\\' ) | Add-CCMClassType
-        
+
     }
 }

@@ -1,12 +1,9 @@
 ﻿Function Get-CCMCollection {
-
-<#
+    <#
 .SYNOPSIS
-
 Get an SCCM Collection
 
 .DESCRIPTION
-
 Get an SCCM Collection by Name or CollectionID
 
 .PARAMETER Name
@@ -16,13 +13,10 @@ Specifies the file name.
 Specifies the extension. "Txt" is the default.
 
 .INPUTS
-
 None. You cannot pipe objects to Add-Extension.
 
 .OUTPUTS
-
-System.String. Add-Extension returns a string with the extension
-or file name.
+System.String. Add-Extension returns a string with the extension or file name.
 
 .EXAMPLE
 C:\PS> Get-CCMCollection *
@@ -37,7 +31,6 @@ C:\PS> Get-CCMCollection *SVR* -HasMaintenanceWindow
 Returns all collections with SVR in the name that have maintenance windows
 
 .LINK
-
 https://github.com/saladproblems/CCM-Core
 
 #>
@@ -50,8 +43,8 @@ https://github.com/saladproblems/CCM-Core
         [ciminstance[]]$CimInstance,
 
         #Specifies an SCCM collection object by providing the collection name or ID.
-        [Parameter(Mandatory,ValueFromPipeline, ValueFromPipelineByPropertyName, Position = 0, ParameterSetName = 'Identity')]
-        [Alias('ClientName', 'CollectionName','CollectionID','Name')]
+        [Parameter(Mandatory, ValueFromPipeline, ValueFromPipelineByPropertyName, Position = 0, ParameterSetName = 'Identity')]
+        [Alias('ClientName', 'CollectionName', 'CollectionID', 'Name')]
         [string[]]$Identity,
 
         #Specifies a where clause to use as a filter. Specify the clause in the WQL query language.
@@ -69,13 +62,13 @@ https://github.com/saladproblems/CCM-Core
 
     )
 
-    Begin {       
+    Begin {
         $cimHash = $Global:CCMConnection.PSObject.Copy()
 
         if ($Property) {
             $cimHash['Property'] = $Property
         }
-        
+
         if ($HasMaintenanceWindow.IsPresent) {
             $HasMaintenanceWindowSuffix = ' AND (ServiceWindowsCount > 0)'
         }
@@ -86,14 +79,14 @@ https://github.com/saladproblems/CCM-Core
         Switch ($PSCmdlet.ParameterSetName) {
             'Identity' {
                 $cimFilter = switch -Regex ($Identity) {
-                    '\*' { 
-                        'Name LIKE "{0}" OR CollectionID LIKE "{0}"' -f ($PSItem -replace '\*','%')
+                    '\*' {
+                        'Name LIKE "{0}" OR CollectionID LIKE "{0}"' -f ($PSItem -replace '\*', '%')
                     }
-                        
+
                     Default {
                         'Name = "{0}" OR CollectionID = "{0}"' -f $PSItem
                     }
-                }                
+                }
             }
             'Filter' {
                 Get-CimInstance @cimHash -ClassName SMS_Collection -Filter $Filter
@@ -102,9 +95,9 @@ https://github.com/saladproblems/CCM-Core
                 $CimInstance | Get-CimInstance
             }
         }
-        
+
         if ($cimFilter) {
-            $cimFilter = '({0}){1}' -f ($cimFilter -join ' OR '),$HasMaintenanceWindowSuffix
+            $cimFilter = '({0}){1}' -f ($cimFilter -join ' OR '), $HasMaintenanceWindowSuffix
             Get-CimInstance @cimHash -ClassName SMS_Collection -Filter $cimFilter |
                 Add-CCMClassType
         }

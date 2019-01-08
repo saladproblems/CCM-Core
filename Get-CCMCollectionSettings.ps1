@@ -1,10 +1,9 @@
-﻿Function Get-CCMCollectionSettings {    
+﻿Function Get-CCMCollectionSettings {
     [cmdletbinding()]
-
     param(
         [ValidateScript( {$PSItem.CimClass.CimClassName -eq 'SMS_Collection'})]
         [Parameter(Mandatory = $true, ValueFromPipeline = $true, Position = 0, ParameterSetName = 'Name')]
-        [CimInstance]$Collection        
+        [CimInstance]$Collection
     )
 
     Begin
@@ -19,7 +18,5 @@
 
             Get-CimInstance @cimHash -ClassName SMS_CollectionSettings -Filter "CollectionID = '$($a_Collection.CollectionID)'" | Get-CimInstance
         }
-           
     }
-
 }

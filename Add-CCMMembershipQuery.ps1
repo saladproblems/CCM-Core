@@ -24,20 +24,20 @@ Function Add-CCMMembershipQuery
         $cimHash = $Global:CCMConnection.PSObject.Copy()
 
         $QueryExpression = @'
-select 
+select
     SMS_R_SYSTEM.ResourceID,
     SMS_R_SYSTEM.ResourceType,
     SMS_R_SYSTEM.Name,
     SMS_R_SYSTEM.SMSUniqueIdentifier,
     SMS_R_SYSTEM.ResourceDomainORWorkgroup,
-    SMS_R_SYSTEM.Client from SMS_R_System 
+    SMS_R_SYSTEM.Client from SMS_R_System
 
-inner join SMS_G_System_SYSTEM on SMS_G_System_SYSTEM.ResourceID = SMS_R_System.ResourceId   
+inner join SMS_G_System_SYSTEM on SMS_G_System_SYSTEM.ResourceID = SMS_R_System.ResourceId
 
-where      
+where
     SMS_G_System_SYSTEM.Name = "{0}"
 
-and       
+and
     (DateDiff(hh, SMS_R_System.CreationDate, GetDate()) < 12)
 
 '@
@@ -49,8 +49,8 @@ and
 
         ForEach ($obj in $ResourceName)
         {
-        
-            $null = New-CimInstance -Namespace $cimHash.Namespace -OutVariable +cmRule -ClassName SMS_CollectionRuleQuery -ClientOnly -Property @{ 
+
+            $null = New-CimInstance -Namespace $cimHash.Namespace -OutVariable +cmRule -ClassName SMS_CollectionRuleQuery -ClientOnly -Property @{
                 RuleName = 'RBBuilds| {0} | {1} added by {2}' -f $ExprirationDate, $obj, $env:USERNAME, $PSCmdlet.MyInvocation.InvocationName, $CimSession.ComputerName.ToUpper(), (Get-Date -Format 'MM/dd/yyyy hh:mm:ss tt')
                 QueryExpression = $QueryExpression -f $ResourceName
             }

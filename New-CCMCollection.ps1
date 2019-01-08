@@ -1,5 +1,4 @@
-Function New-CCMCollection
-{
+Function New-CCMCollection {
     [cmdletbinding()]
     [Alias('New-SMS_Collection')]
 
@@ -10,33 +9,30 @@ Function New-CCMCollection
 
         [ccm.CollectionType]$CollectionType,
 
-        [Parameter(Mandatory,ParameterSetName='CollectionID')]
+        [Parameter(Mandatory, ParameterSetName = 'CollectionID')]
         [string]$LimitToCollectionID,
 
-        [Parameter(Mandatory,ParameterSetName='Collection')]
-        [ValidateScript({$PSItem.CimClass.CimClassName -eq 'SMS_Collection'})]
+        [Parameter(Mandatory, ParameterSetName = 'Collection')]
+        [ValidateScript( {$PSItem.CimClass.CimClassName -eq 'SMS_Collection'})]
         [ciminstance]$LimitToCollection
     )
 
-    Begin
-    {       
+    Begin {
         $cimHash = $sbCCMGetCimParm.InvokeReturnAsIs()
     }
 
-    Process
-    {
+    Process {
         $newCollectionProperty = @{
-            Name = $Name
-            CollectionType = [int]$CollectionType
+            Name                = $Name
+            CollectionType      = [int]$CollectionType
             LimitToCollectionID = $LimitToCollectionID
         }
-        if ($LimitToCollection)
-        {
+        if ($LimitToCollection) {
             $newCollectionProperty['LimitToCollectionID'] = $LimitToCollection.CollectionID
         }
 
         $newCollectionProperty | Out-String | Write-Verbose
-        
+
         New-CimInstance -OutVariable newCollection @cimHash -ClassName SMS_Collection -Property $newCollectionProperty
     }
 }

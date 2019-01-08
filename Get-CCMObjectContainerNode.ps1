@@ -34,7 +34,7 @@ Function Get-ObjectContainerNode {
 
         if ($Property) {
             $cimHash['Property'] = $Property
-        }      
+        }
     }
 
     Process {
@@ -57,8 +57,7 @@ Function Get-ObjectContainerNode {
                 Get-CimInstance @cimHash -Filter $Filter
             }
             'CimInstance' {
-                switch ($CimInstance)
-                {
+                switch ($CimInstance) {
                     {$PSItem.CimClass.CimClassName -eq 'SMS_ObjectContainerNode'} {
                         $CimInstance | Get-CimInstance
                         continue

@@ -1,5 +1,5 @@
 ﻿Function Get-CCMResource {
-<#
+    <#
 .SYNOPSIS
 
 Get an SCCM Resource
@@ -30,33 +30,32 @@ https://github.com/saladproblems/CCM-Core
     param(
         #Specifies an SCCM Resource object by providing the 'Name' or 'ResourceID'.
         [Parameter(ValueFromPipeline = $true, Position = 0, ParameterSetName = 'Identity')]
-        [Alias('Name','ClientName','ResourceName''ResourceID')]
+        [Alias('Name', 'ClientName', 'ResourceName''ResourceID')]
         [WildcardPattern[]]$Identity,
 
         #Specifies a CIM instance object to use as input.
         [Parameter(ValueFromPipeline, Mandatory, ParameterSetName = 'inputObject')]
         [ciminstance]$inputObject,
 
-        #Specifies a where clause to use as a filter. Specify the clause in either the WQL or the CQL query language.   
+        #Specifies a where clause to use as a filter. Specify the clause in either the WQL or the CQL query language.
         [Parameter(ParameterSetName = 'Filter')]
         [string]$Filter
     )
 
     Begin {
         try {
-            $cimHash = $Global:CCMConnection.PSObject.Copy()   
-        }
-        catch {
+            $cimHash = $Global:CCMConnection.PSObject.Copy()
+        } catch {
             Throw 'Not connected to CCM, reconnect using Connect-CCM'
         }
-        $cimHash['ClassName'] = 'SMS_R_System'        
+        $cimHash['ClassName'] = 'SMS_R_System'
     }
 
     Process {
         Switch ($PSCmdlet.ParameterSetName) {
             'Identity' {
                 switch -Regex ($Identity.ToWql()) {
-                   '^(\d|%)+$' {
+                    '^(\d|%)+$' {
                         Get-CimInstance @cimHash -Filter ('ResourceID LIKE "{0}"' -f $PSItem)
                     }
                     default {
@@ -73,6 +72,5 @@ https://github.com/saladproblems/CCM-Core
                 }
             }
         }
-           
     }
 }

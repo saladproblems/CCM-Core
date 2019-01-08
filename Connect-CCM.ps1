@@ -1,5 +1,5 @@
 ﻿function Connect-CCM {
- <#
+    <#
     .SYNOPSIS
         This function establishes a connection to an SCCM Server system.
 
@@ -18,7 +18,7 @@
         C:\PS>Connect-CCM -Server WINSCCM01
 
         Connects to the SCCM server WINSCCM01
-#>
+    #>
     [CmdletBinding()]
     Param
     (
@@ -43,7 +43,7 @@
         if ($Reconnect) {
             $cimSession | Remove-CimSession
         }
-        
+
         $siteParm = @{
             ClassName = 'SMS_ProviderLocation'
             NameSpace = 'root/sms'
@@ -51,8 +51,7 @@
 
         $siteName = try {
             (Get-CimInstance @siteParm -CimSession $cimSession)[0].NamespacePath -replace '^.+site_'
-        }
-        catch {
+        } catch {
             $cimSession = New-CimSession -ComputerName $ComputerName -Name "ccmConnection" -Credential $Credential
             (Get-CimInstance @siteParm -CimSession $cimSession)[0].NamespacePath -replace '^.+site_'
         }
@@ -63,5 +62,4 @@
             NameSpace  = 'root\sms\site_{0}' -f $siteName
         }
     }
-    
 }
