@@ -42,16 +42,16 @@ https://github.com/saladproblems/CCM-Core
 
 #>
     [Alias('Get-SMS_Collection')]
-    [cmdletbinding()]
+    [cmdletbinding(DefaultParameterSetName = 'inputObject')]
 
     param(
         #Specifies a CIM instance object to use as input.
-        [Parameter(Mandatory, ValueFromPipeline, ParameterSetName = 'CimInstance')]
-        [ciminstance[]]$CimInstance,
+        [Parameter(Mandatory, ValueFromPipeline, ParameterSetName = 'InputObject')]
+        [ciminstance[]]$InputObject,
 
         #Specifies an SCCM collection object by providing the collection name or ID.
-        [Parameter(Mandatory,ValueFromPipeline, ValueFromPipelineByPropertyName, Position = 0, ParameterSetName = 'Identity')]
-        [Alias('ClientName', 'CollectionName','CollectionID','Name')]
+        [Parameter(Mandatory, ValueFromPipeline, ValueFromPipelineByPropertyName, Position = 0, ParameterSetName = 'Identity')]
+        [Alias('ClientName', 'CollectionName', 'CollectionID', 'Name')]
         [string[]]$Identity,
 
         #Specifies a where clause to use as a filter. Specify the clause in the WQL query language.
@@ -65,17 +65,17 @@ https://github.com/saladproblems/CCM-Core
 
         #Specifies a set of instance properties to retrieve.
         [Parameter()]
-        [string[]]$Property = @( 'Name', 'CollectionID', 'LastChangeTime', 'LimitToCollectionID', 'LimitToCollectionname', 'MemberCount' )
+        [string[]]$Property
 
     )
 
-    Begin {       
+    Begin {
         $cimHash = $Global:CCMConnection.PSObject.Copy()
 
         if ($Property) {
             $cimHash['Property'] = $Property
         }
-        
+
         if ($HasMaintenanceWindow.IsPresent) {
             $HasMaintenanceWindowSuffix = ' AND (ServiceWindowsCount > 0)'
         }
@@ -86,25 +86,29 @@ https://github.com/saladproblems/CCM-Core
         Switch ($PSCmdlet.ParameterSetName) {
             'Identity' {
                 $cimFilter = switch -Regex ($Identity) {
-                    '\*' { 
-                        'Name LIKE "{0}" OR CollectionID LIKE "{0}"' -f ($PSItem -replace '\*','%')
+                    '\*' {
+                        'Name LIKE "{0}" OR CollectionID LIKE "{0}"' -f ($PSItem -replace '\*', '%')
                     }
-                        
+
                     Default {
                         'Name = "{0}" OR CollectionID = "{0}"' -f $PSItem
                     }
-                }                
+                }
             }
             'Filter' {
                 Get-CimInstance @cimHash -ClassName SMS_Collection -Filter $Filter
             }
-            'CimInstance' {
-                $CimInstance | Get-CimInstance
+            'InputObject' {
+                switch ($InputObject) {
+                    {$PSItem.CimInstance.cimclass -match 'SMS_ObjectContainerItem'} {
+                        'CollectionID = "{0}"' -f $PSItem.CollectionID
+                    }
+                }
             }
         }
-        
+
         if ($cimFilter) {
-            $cimFilter = '({0}){1}' -f ($cimFilter -join ' OR '),$HasMaintenanceWindowSuffix
+            $cimFilter = '({0}){1}' -f ($cimFilter -join ' OR '), $HasMaintenanceWindowSuffix
             Get-CimInstance @cimHash -ClassName SMS_Collection -Filter $cimFilter |
                 Add-CCMClassType
         }

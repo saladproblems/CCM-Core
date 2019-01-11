@@ -31,7 +31,7 @@ https://github.com/saladproblems/CCM-Core
         #Specifies an SCCM Resource object by providing the 'Name' or 'ResourceID'.
         [Parameter(ValueFromPipeline = $true, Position = 0, ParameterSetName = 'Identity')]
         [Alias('Name','ClientName','ResourceName''ResourceID')]
-        [WildcardPattern[]]$Identity,
+        [string[]]$Identity,
 
         #Specifies a CIM instance object to use as input.
         [Parameter(ValueFromPipeline, Mandatory, ParameterSetName = 'inputObject')]
@@ -55,12 +55,12 @@ https://github.com/saladproblems/CCM-Core
     Process {
         Switch ($PSCmdlet.ParameterSetName) {
             'Identity' {
-                switch -Regex ($Identity.ToWql()) {
-                   '^(\d|%)+$' {
-                        Get-CimInstance @cimHash -Filter ('ResourceID LIKE "{0}"' -f $PSItem)
+                switch -Regex ($Identity)  {
+                   '^(%|\d).+$' {
+                        Get-CimInstance @cimHash -Filter ('ResourceID LIKE "{0}"' -f $PSItem -replace '\*','%')
                     }
                     default {
-                        Get-CimInstance @cimHash -filter ('Name LIKE "{0}"' -f $PSItem)
+                        Get-CimInstance @cimHash -filter ('Name LIKE "{0}"' -f $PSItem -replace '\*','%')
                     }
                 }
             }

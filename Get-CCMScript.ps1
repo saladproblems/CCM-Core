@@ -1,15 +1,16 @@
 Function Get-CCMScript {
     
-    [cmdletbinding(SupportsShouldProcess = $true)]
+    [cmdletbinding(DefaultParameterSetName = 'inputObject')]
 
     param(
-        [Parameter(ValueFromPipelineByPropertyName, ParameterSetName = 'ScriptGUID')]
-        [Alias('GUID')]
-        [guid[]]$ScriptGUID,
+        #Specifies a CIM instance object to use as input.
+        [Parameter(Mandatory, ValueFromPipeline, ParameterSetName = 'InputObject')]
+        [ciminstance[]]$InputObject,
 
-        [Parameter(ValueFromPipelineByPropertyName, Position = 0, ParameterSetName = 'ScriptName')]
-        [Alias('Name')]
-        [string[]]$ScriptName,
+        #Specifies an SCCM collection object by providing the collection name or ID.
+        [Parameter(Mandatory, ValueFromPipeline, ValueFromPipelineByPropertyName, Position = 0, ParameterSetName = 'Identity')]
+        [Alias('ScriptGUID', 'ScriptName')]
+        [string[]]$Identity,       
 
         [Parameter(ValueFromPipelineByPropertyName = $true, ParameterSetName = 'Author')]
         [string[]]$Author,
@@ -20,53 +21,35 @@ Function Get-CCMScript {
 
     Begin {
         try {
-            $cimHash = $Global:CCMConnection.PSObject.Copy()   
+            $cimHash = $Global:CCMConnection.PSObject.Copy()
         }
         catch {
             Throw 'Not connected to CCM, reconnect using Connect-CCM'
-        }                     
+        }        
+        $cimHash['ClassName'] = 'SMS_Scripts'             
     }
 
     Process {
-        $cimFilter = $null
-
-        $cimFilter = Switch ($PSCmdlet.ParameterSetName) {
-            'ScriptName' {
-                Foreach ($obj in $ScriptName) {
-                    if ($obj -match '\*') {
-                        "ScriptName LIKE '$($obj -replace '\*','%')'" | Write-Output -OutVariable cap
-                    }
-                    else {
-                        "ScriptName = '$obj'"
-                    }
+        Write-Debug $PSCmdlet.ParameterSetName
+        Switch ($PSCmdlet.ParameterSetName) {
+            'inputObject' {
+                $inputObject | Get-CimInstance
+            }
+            'Identity' {
+                Foreach ($obj in $Identity) {
+                    Get-CimInstance @cimHash -Filter ('ScriptName LIKE "{0}" OR ScriptGUID LIKE "{0}"' -f $obj -replace '\*', '%' -replace '\[', '[$0]' )
                 }
             }
             'Author' {
                 Foreach ($obj in $Author) {
-                    if ($obj -match '\*') {
-                        "Author LIKE '$($obj -replace '\*','%')'" | Write-Output -OutVariable cap
-                    }
-                    else {
-                        "Author = '$obj'"
-                    }
+                    Get-CimInstance @cimHash -Filter "Author LIKE '$($obj -replace '\*','%')'"
                 }
             }
-
-            'ScriptGUID' {
-                Foreach ($obj in $ScriptGUID) {
-                    "ScriptGuid='$obj'"
-                }
-            }
-
             'Filter' {
                 Foreach ($obj in $Filter) {
-                    $Filter
+                    Get-CimInstance @cimHash -Filter $Filter
                 }
             }           
         }
-
-        #"\" is an escape character in WQL
-        Get-CimInstance @cimHash -ClassName SMS_Scripts -Filter ($cimFilter -join ' OR ' -replace '\\', '\\' ) | Add-CCMClassType
-        
     }
 }
