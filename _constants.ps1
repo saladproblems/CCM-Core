@@ -6,7 +6,7 @@ $sbCCMGetCimParm = {
          Throw 'Not connected to CCM, reconnect using Connect-CCM'
      }
  }
- 
+
  #region Force confirm prompt for Remove-CimInstance
  <#
  I think this is bad practice, but I don't have a good workaround - Remove-CimInstance can delete any CCM objects
@@ -36,7 +36,26 @@ namespace CCM
           October = 10,
           November = 11,
           December = 12
-             
+
+     }
+     public enum FolderType
+     {
+          TYPE_PACKAGE = 2,
+          TYPE_ADVERTISEMENT = 3,
+          TYPE_QUERY = 7,
+          TYPE_REPORT = 8,
+          TYPE_METEREDPRODUCTRULE = 9,
+          TYPE_CONFIGURATIONITEM = 11,
+          TYPE_OSINSTALLPACKAGE = 14,
+          TYPE_STATEMIGRATION = 17,
+          TYPE_IMAGEPACKAGE = 18,
+          TYPE_BOOTIMAGEPACKAGE = 19,
+          TYPE_TASKSEQUENCEPACKAGE = 20,
+          TYPE_DEVICESETTINGPACKAGE = 21,
+          TYPE_DRIVERPACKAGE = 23,
+          TYPE_DRIVER = 25,
+          TYPE_SOFTWAREUPDATE = 1011,
+          TYPE_CONFIGURATIONBASELINE = 2011
      }
      public enum RecurrenceType
      {
@@ -66,6 +85,14 @@ namespace CCM
           Incremental = 4,
           IncrementalAndPeriodic = 6
      }
-
+     public enum EvalResult {
+          Not_Yet_Evaluated = 1,
+          Not_Applicable = 2,
+          Evaluation_Failed = 3,
+          Evaluated_Remediated_Failed = 4,
+          Not_Evaluated_Dependency_Failed = 5,
+          Evaluated_Remediated_Succeeded = 6,
+          Evaluation_Succeeded = 7
+     }
 }
 '@
