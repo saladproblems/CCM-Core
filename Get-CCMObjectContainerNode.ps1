@@ -1,19 +1,12 @@
-Function Get-ObjectContainerNode {
+Function Get-CCMObjectContainerNode {
 
-    [Alias('Get-SMS_ObjectContainerNode', 'Get-CCMFolder')]
-    [cmdletbinding(DefaultParameterSetName = 'none')]
+    [Alias('Get-SMS_ObjectContainerNode', 'Get-CCMFolder','Get-ObjectContainerNode')]
+    [cmdletbinding(DefaultParameterSetName = 'Identity')]
 
     param(
         #Specifies a container by ContainerNodeID, FolderGuid, or Name
-        [Parameter(ValueFromPipeline, Position = 0, ParameterSetName = 'Identity')]
+        [Parameter(Mandatory, ValueFromPipeline, Position = 0, ParameterSetName = 'Identity')]
         [string[]]$Identity,
-
-        <#
-        [alias('Folder')]
-        [ValidateScript( {$CimInstance.CimClass.CimClassName -eq 'SMS_ObjectContainerNode'})]
-        [Parameter(ValueFromPipeline, ParameterSetName = 'CimInstance')]
-        [ciminstance[]]$CimInstance,
-        #>
 
         #Specifies a where clause to use as a filter. Specify the clause in either the WQL or the CQL query language.
         [Parameter(Mandatory = $true, ParameterSetName = 'Filter')]
@@ -45,11 +38,11 @@ Function Get-ObjectContainerNode {
             }
             'Identity' {
                 switch -Regex ($Identity) {
-                    '\*' {
-                        Get-CimInstance @cimHash -Filter ('ContainerNodeID LIKE "{0}" OR FolderGuid LIKE "{0}" OR Name LIKE "{0}"' -f ($PSItem -replace '\*', '%' ))
+                    '^(%|\d).+$' {
+                        Get-CimInstance @cimHash -Filter ('ContainerNodeID LIKE "{0}"' -f ($PSItem -replace '\*', '%' ))
                     }
-                    default {
-                        Get-CimInstance @cimHash -Filter ('ContainerNodeID = "{0}" OR FolderGuid = "{0}" OR Name = "{0}"' -f $PSItem)
+                    default {                        
+                        Get-CimInstance @cimHash -Filter ('FolderGuid LIKE "{0}" OR Name LIKE "{0}"' -f ($PSItem -replace '\*', '%' ))
                     }
                 }
             }
