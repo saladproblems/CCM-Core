@@ -6,11 +6,11 @@
         #Specifies an the members an SCCM resource is a member of by the resource's name or ID.
         [Parameter(ValueFromPipeline, ValueFromPipelineByPropertyName, Position = 0, ParameterSetName = 'Identity')]
         [Alias('ClientName', 'ResourceName', 'ResourceID', 'Name')]
-        [WildcardPattern[]]$Identity,
+        [string[]]$Identity,
         
         #Specifies a CIM instance object to use as input, must be SMS_R_System (returned by "get-CCMResource")
         [Parameter(ValueFromPipeline, Mandatory, ParameterSetName = 'inputObject')]
-        [ValidateScript( {$PSItem.CimClass.CimClassName -eq 'SMS_R_System'})]
+        [ValidateScript( {$PSItem.CimClass.CimClassName -match 'SMS_R_System|SMS_FullCollectionMembership'})]
         [ciminstance]$inputObject,
 
         #Restrict results to only collections with a ServiceWindow count greater than 0
@@ -45,18 +45,19 @@
         Write-Debug "Choosing parameterset: '$($PSCmdlet.ParameterSetName)'"
         Switch ($PSCmdlet.ParameterSetName) {
             'Identity' {
-                $resourceMembership = switch -Regex ($Identity.ToWql()) {
+                $resourceMembership = switch -Regex ($Identity) {
                     '^(\d|%)+$' {
-                        Get-CimInstance @cimHash -Filter ('ResourceID LIKE "{0}"' -f $PSItem)
+                        Get-CimInstance @cimHash -Filter ('ResourceID LIKE "{0}"' -f $PSItem -replace '\*','%')
                     }
                     default {
-                        Get-CimInstance @cimHash -filter ('Name LIKE "{0}"' -f $PSItem)
+                        Get-CimInstance @cimHash -filter ('Name LIKE "{0}"' -f $PSItem -replace '\*','%')
                     }
                 }
                 if ($ShowResourceName.IsPresent) {
                     Write-Host "Collection memberships for: '$($resourceMembership[0].Name)'" -ForegroundColor Green
                 }
-                Get-CCMCollection -Identity $resourceMembership.CollectionID @getCollParm
+                Get-CCMCollection -Identity $resourceMembership.CollectionID @getCollParm |
+                    Write-Output
             }
             'inputObject' {
                 if ($ShowResourceName.IsPresent) {
