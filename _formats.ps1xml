@@ -9,10 +9,8 @@
             <TableControl>
                 <TableHeaders>
                     <TableColumnHeader>
-                        <Width>80</Width>
                     </TableColumnHeader>
                     <TableColumnHeader>
-                        <Width>12</Width>
                     </TableColumnHeader>
                     <TableColumnHeader>
                         <Width>20</Width>
@@ -99,6 +97,48 @@
                             </TableColumnItem>
                             <TableColumnItem>
                                 <PropertyName>FullDomainName</PropertyName>
+                            </TableColumnItem>
+                        </TableColumnItems>
+                    </TableRowEntry>
+                </TableRowEntries>
+            </TableControl>
+        </View>
+        <View>
+            <Name>SMS_CollectionRule</Name>
+            <ViewSelectedBy>
+                <TypeName>Microsoft.Management.Infrastructure.CimInstance#SMS_CollectionRule</TypeName>
+            </ViewSelectedBy>
+            <TableControl>
+                <TableHeaders>
+                    <TableColumnHeader>
+                    <Width>40</Width>
+                    </TableColumnHeader>                    
+                    <TableColumnHeader>
+                    <Label>RuleType</Label>
+                    <Width>30</Width>
+                    </TableColumnHeader>
+                    <TableColumnHeader>
+                    <Label>RuleText</Label>
+                    </TableColumnHeader>
+                </TableHeaders>
+                <TableRowEntries>
+                    <TableRowEntry>
+                        <TableColumnItems>
+                            <TableColumnItem>
+                                <PropertyName>RuleName</PropertyName>
+                            </TableColumnItem>
+                            <TableColumnItem>
+                                <ScriptBlock>$PSItem.CimClass.CimClassName</ScriptBlock>
+                            </TableColumnItem>
+                            <TableColumnItem>
+                                <ScriptBlock>
+                                    [PSCustomObject]@{
+                                        SMS_CollectionRuleDirect = $PSItem.ResourceID
+                                        SMS_CollectionRuleIncludeCollection = $PSItem.IncludeCollectionID
+                                        SMS_CollectionRuleExcludeCollection = $PSItem.ExcludeCollectionID
+                                        SMS_CollectionRuleQuery = $PSItem.QueryExpression
+                                    }.($PSItem.CimClass.CimclassName)
+                                </ScriptBlock>                               
                             </TableColumnItem>
                         </TableColumnItems>
                     </TableRowEntry>
@@ -277,6 +317,7 @@
             <Name>SMS_Application</Name>
             <ViewSelectedBy>
                 <TypeName>Microsoft.Management.Infrastructure.CimInstance#root/sms/site_qtc/SMS_Application</TypeName>
+                <TypeName>Microsoft.Management.Infrastructure.CimInstance#root/sms/site_qtc/SMS_ApplicationLatest</TypeName>
             </ViewSelectedBy>
             <TableControl>
                 <TableHeaders>
@@ -314,6 +355,53 @@
                 </TableRowEntries>
             </TableControl>
         </View>
+        <View>
+            <Name>SMS_CH_EvalResult</Name>
+            <ViewSelectedBy>
+                <TypeName>Microsoft.Management.Infrastructure.CimInstance#SMS_CH_EvalResult</TypeName>
+            </ViewSelectedBy>
+            <TableControl>
+                <TableHeaders>
+                    <TableColumnHeader>
+                    </TableColumnHeader>
+                    <TableColumnHeader>
+                    </TableColumnHeader>
+                    <TableColumnHeader>                        
+                    </TableColumnHeader>
+                    <TableColumnHeader>
+                    </TableColumnHeader>
+                    <TableColumnHeader>
+                    </TableColumnHeader>
+                    <TableColumnHeader>
+                    </TableColumnHeader>
+
+                </TableHeaders>
+                <TableRowEntries>
+                    <TableRowEntry>
+                        <TableColumnItems>
+                            <TableColumnItem>
+                                <PropertyName>ResourceID</PropertyName>
+                            </TableColumnItem>
+                            <TableColumnItem>
+                                <PropertyName>EvalTime</PropertyName>
+                            </TableColumnItem>
+                            <TableColumnItem>
+                                <PropertyName>HealthCheckDescription</PropertyName>
+                            </TableColumnItem>
+                            <TableColumnItem>
+                                <PropertyName>ResultDetail</PropertyName>
+                            </TableColumnItem>
+                            <TableColumnItem>
+                                <PropertyName>Result</PropertyName>
+                            </TableColumnItem>
+                            <TableColumnItem>
+                                <PropertyName>ResultCode</PropertyName>
+                            </TableColumnItem>
+
+                        </TableColumnItems>
+                    </TableRowEntry>
+                </TableRowEntries>
+            </TableControl>
+        </View>
     </ViewDefinitions>
 </Configuration>
-
