@@ -1,4 +1,4 @@
-Function New-CCMCollection
+﻿Function New-CCMCollection
 {
     [cmdletbinding()]
     [Alias('New-SMS_Collection')]
@@ -19,7 +19,7 @@ Function New-CCMCollection
     )
 
     Begin
-    {       
+    {
         $cimHash = $sbCCMGetCimParm.InvokeReturnAsIs()
     }
 
@@ -36,7 +36,7 @@ Function New-CCMCollection
         }
 
         $newCollectionProperty | Out-String | Write-Verbose
-        
+
         New-CimInstance -OutVariable newCollection @cimHash -ClassName SMS_Collection -Property $newCollectionProperty
     }
 }

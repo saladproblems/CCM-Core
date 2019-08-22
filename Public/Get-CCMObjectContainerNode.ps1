@@ -1,4 +1,4 @@
-Function Get-CCMObjectContainerNode {
+﻿Function Get-CCMObjectContainerNode {
 
     [Alias('Get-SMS_ObjectContainerNode', 'Get-CCMFolder','Get-ObjectContainerNode')]
     [cmdletbinding(DefaultParameterSetName = 'Identity')]
@@ -27,7 +27,7 @@ Function Get-CCMObjectContainerNode {
 
         if ($Property) {
             $cimHash['Property'] = $Property
-        }      
+        }
     }
 
     Process {
@@ -41,7 +41,7 @@ Function Get-CCMObjectContainerNode {
                     '^(%|\d).+$' {
                         Get-CimInstance @cimHash -Filter ('ContainerNodeID LIKE "{0}"' -f ($PSItem -replace '\*', '%' ))
                     }
-                    default {                        
+                    default {
                         Get-CimInstance @cimHash -Filter ('FolderGuid LIKE "{0}" OR Name LIKE "{0}"' -f ($PSItem -replace '\*', '%' ))
                     }
                 }

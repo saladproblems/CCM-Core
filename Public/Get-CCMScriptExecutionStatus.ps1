@@ -1,8 +1,8 @@
-Function Get-CCMScriptExecutionStatus {
+﻿Function Get-CCMScriptExecutionStatus {
     [cmdletbinding()]
 
     [alias('Get-CCMScriptsExecutionStatus')]
-    
+
     param(
         [Parameter(ValueFromPipeline = $true)]
         [ciminstance[]]
@@ -20,7 +20,7 @@ Function Get-CCMScriptExecutionStatus {
 
     begin {
         try {
-            [hashtable]$cimHash = $Global:CCMConnection.PSObject.Copy()   
+            [hashtable]$cimHash = $Global:CCMConnection.PSObject.Copy()
         }
         catch {
             Throw 'Not connected to CCM, reconnect using Connect-CCM'
@@ -37,7 +37,7 @@ Function Get-CCMScriptExecutionStatus {
 
     end {
         $filter = $cimArray.ForEach( { 'ScriptGUID = "{0}"' -f $PSItem.ScriptGuid }) -join ' OR '
-        
+
         Get-CimInstance @cimHash -Filter $filter
     }
 }

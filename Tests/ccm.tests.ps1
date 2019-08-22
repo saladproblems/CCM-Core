@@ -6,7 +6,9 @@ param(
 )
 
 Remove-Module CCM -ErrorAction SilentlyContinue
+
 Describe "CCM module function checks" {
+    $localhostResource = Get-CCMResource -Identity $ResourceName
     Context Connect-CCM {
         it "Global variable should contain CimSession" { 
             $global:CCMConnection.CimSession | should -BeOfType [CimSession]
@@ -17,7 +19,7 @@ Describe "CCM module function checks" {
     }
 
     Context "Get-CCMResource" {
-        $localhostResource = Get-CCMResource -Identity $ResourceName
+
         it "Find resource by Name" {
             $localhostResource | should -BeOfType [ciminstance]
         }
@@ -28,7 +30,7 @@ Describe "CCM module function checks" {
         it "Requery resource CimInstance" {
             $localhostResource | Get-CCMResource
         }
-        it "Find resource by query" {
+        it "Find resource by Query" {
             Get-CCMResource -Filter "name = '$ResourceName'"
         }
     }
@@ -36,10 +38,6 @@ Describe "CCM module function checks" {
     Context "Get-CCMResourceMembership" {        
         it "Find resource by Name" {
             (Get-CCMResourceMembership -Identity $ResourceName).Count | 
-                should -BeGreaterThan 0
-        }
-        it "Find resource membership by ResourceID" {
-            ($localhostResource.ResourceID | Get-CCMResourceMembership).Count |
                 should -BeGreaterThan 0
         }
         it "Find resource membership by ResourceID" {
@@ -54,7 +52,7 @@ Describe "CCM module function checks" {
 
     Context Get-CCMCollection {
         $Collection = Get-CCMCollection -Identity * | Select-Object -First 5
-        it "Find all collections by wildcard" {
+        it "Find all collections by Wildcard" {
             $Collection.Count | should -BeGreaterThan 0
         }
         it "Find collection by Name" {
@@ -74,7 +72,7 @@ Describe "CCM module function checks" {
             ($Collection.Name -replace '..$','*$0' | Get-CCMCollectionMember).Count | 
                 should -BeGreaterThan 0
         }
-        it "Find collection member by name" {
+        it "Find collection member by Name" {
             ($Collection.Name -replace '..$','*$0' | Get-CCMCollectionMember).Count | 
                 should -BeGreaterThan 0
         }

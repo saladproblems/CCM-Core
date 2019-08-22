@@ -1,4 +1,4 @@
-Function Get-CCMCimClass {   
+﻿Function Get-CCMCimClass {
     [Alias('Get-CCMClass')]
     [cmdletbinding()]
     param(
@@ -9,11 +9,11 @@ Function Get-CCMCimClass {
 
     Begin {
         try {
-            $cimHash = $Global:CCMConnection.PSObject.Copy()   
+            $cimHash = $Global:CCMConnection.PSObject.Copy()
         }
         catch {
             Throw 'Not connected to CCM, reconnect using Connect-CCM'
-        }       
+        }
     }
 
     Process {

@@ -15,7 +15,6 @@ Design Goals:
 ### Primary Functions:
 - Add-CCMMembershipDirect
 - Connect-CCM
-- Get-CCMApplication (new)
 - Get-CCMCimClass
 - Get-CCMCimInstance
 - Get-CCMClientExecutionRequest
@@ -27,11 +26,9 @@ Design Goals:
 - Get-CCMScript
 - Get-CCMScriptExecutionStatus
 - Get-CCMUserMachineRelationship
-- Get-ObjectContainerNode (new)
 - Invoke-CCMCollectionRefresh
 - New-CCMCollection
 
-
 ### SupportFunctions
 - Add-CCMClassType
-- Get-NthWeekDay
+- Get-NthWeekDay (Get-PatchTuesday)

@@ -1,13 +1,16 @@
-Function Get-CCMCimInstance {   
+﻿Function Get-CCMCimInstance {
     [Alias('Get-CCMInstance')]
     [cmdletbinding()]
     param(
-        [Parameter(Mandatory, Position = 0)]
+        [Parameter(Mandatory, Position = 0,ParameterSetName='Class')]
         [Alias('Class')]
         [string]$ClassName,
 
-        [Parameter()]
+        [Parameter(ParameterSetName='Class')]
         [string]$Filter,
+
+        [Parameter(ParameterSetName='Query')]
+        [string]$Query,
 
         [Parameter(Position = 1)]
         [Alias('Properties')]
@@ -16,11 +19,11 @@ Function Get-CCMCimInstance {
 
     Begin {
         try {
-            $cimHash = $Global:CCMConnection.PSObject.Copy()   
+            $cimHash = $Global:CCMConnection.PSObject.Copy()
         }
         catch {
             Throw 'Not connected to CCM, reconnect using Connect-CCM'
-        }        
+        }
     }
 
     Process {

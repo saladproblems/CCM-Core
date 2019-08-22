@@ -36,7 +36,7 @@
                                 <PropertyName>CollectionID</PropertyName>
                             </TableColumnItem>
                             <TableColumnItem>
-                                <PropertyName>CollectionRules</PropertyName>
+                                <PropertyName>MemberCount</PropertyName>
                             </TableColumnItem>
                             <TableColumnItem>
                                 <PropertyName>LastChangeTime</PropertyName>
@@ -111,14 +111,14 @@
             <TableControl>
                 <TableHeaders>
                     <TableColumnHeader>
-                    <Width>40</Width>
-                    </TableColumnHeader>                    
-                    <TableColumnHeader>
-                    <Label>RuleType</Label>
-                    <Width>30</Width>
+                        <Width>40</Width>
                     </TableColumnHeader>
                     <TableColumnHeader>
-                    <Label>RuleText</Label>
+                        <Label>RuleType</Label>
+                        <Width>30</Width>
+                    </TableColumnHeader>
+                    <TableColumnHeader>
+                        <Label>RuleText</Label>
                     </TableColumnHeader>
                 </TableHeaders>
                 <TableRowEntries>
@@ -138,7 +138,7 @@
                                         SMS_CollectionRuleExcludeCollection = $PSItem.ExcludeCollectionID
                                         SMS_CollectionRuleQuery = $PSItem.QueryExpression
                                     }.($PSItem.CimClass.CimclassName)
-                                </ScriptBlock>                               
+                                </ScriptBlock>
                             </TableColumnItem>
                         </TableColumnItems>
                     </TableRowEntry>
@@ -366,7 +366,7 @@
                     </TableColumnHeader>
                     <TableColumnHeader>
                     </TableColumnHeader>
-                    <TableColumnHeader>                        
+                    <TableColumnHeader>
                     </TableColumnHeader>
                     <TableColumnHeader>
                     </TableColumnHeader>
@@ -398,6 +398,150 @@
                                 <PropertyName>ResultCode</PropertyName>
                             </TableColumnItem>
 
+                        </TableColumnItems>
+                    </TableRowEntry>
+                </TableRowEntries>
+            </TableControl>
+        </View>
+        <View>
+            <Name>SMS_CH_EvalResult</Name>
+            <ViewSelectedBy>
+                <TypeName>Microsoft.Management.Infrastructure.CimInstance#root/ccm/ClientSDK/CCM_SoftwareUpdate</TypeName>
+            </ViewSelectedBy>
+            <TableControl>
+                <TableHeaders>
+                    <TableColumnHeader>
+                    </TableColumnHeader>
+                    <TableColumnHeader>
+                    </TableColumnHeader>
+                    <TableColumnHeader>
+                        <Label>EvaluationState</Label>
+                    </TableColumnHeader>
+                    <TableColumnHeader>
+                    </TableColumnHeader>
+                    <TableColumnHeader>
+                    </TableColumnHeader>
+                    <TableColumnHeader>
+                    </TableColumnHeader>
+
+                </TableHeaders>
+                <TableRowEntries>
+                    <TableRowEntry>
+                        <TableColumnItems>
+                            <TableColumnItem>
+                                <PropertyName>StartTime</PropertyName>
+                            </TableColumnItem>
+                            <TableColumnItem>
+                                <PropertyName>Deadline</PropertyName>
+                            </TableColumnItem>
+                            <TableColumnItem>
+                                <ScriptBlock>[ccm.EvaluationState]($PSItem.EvaluationState)</ScriptBlock>
+                            </TableColumnItem>
+                            <TableColumnItem>
+                                <PropertyName>ArticleID</PropertyName>
+                            </TableColumnItem>
+                            <TableColumnItem>
+                                <PropertyName>PercentComplete</PropertyName>
+                            </TableColumnItem>
+                            <TableColumnItem>
+                                <PropertyName>Name</PropertyName>
+                            </TableColumnItem>
+
+                        </TableColumnItems>
+                    </TableRowEntry>
+                </TableRowEntries>
+            </TableControl>
+        </View>
+        <View>
+            <Name>SMS_AuthorizationList</Name>
+            <ViewSelectedBy>
+                <TypeName>Microsoft.Management.Infrastructure.CimInstance#root/sms/site_qtc/SMS_AuthorizationList</TypeName>
+            </ViewSelectedBy>
+            <TableControl>
+                <TableHeaders>
+                    <TableColumnHeader>
+                    </TableColumnHeader>
+                    <TableColumnHeader>
+                    </TableColumnHeader>
+                    <TableColumnHeader>
+                    </TableColumnHeader>
+                    <TableColumnHeader>
+                    </TableColumnHeader>
+                    <TableColumnHeader>
+                    </TableColumnHeader>
+                    <TableColumnHeader>
+                    </TableColumnHeader>
+                    <TableColumnHeader>
+                    </TableColumnHeader>
+                    <TableColumnHeader>
+                    </TableColumnHeader>
+
+                </TableHeaders>
+                <TableRowEntries>
+                    <TableRowEntry>
+                        <TableColumnItems>
+                            <TableColumnItem>
+                                <PropertyName>LocalizedDisplayName</PropertyName>
+                            </TableColumnItem>
+                            <TableColumnItem>
+                                <PropertyName>CI_ID</PropertyName>
+                            </TableColumnItem>
+                            <TableColumnItem>
+                                <PropertyName>IsEnabled</PropertyName>
+                            </TableColumnItem>
+                            <TableColumnItem>
+                                <PropertyName>NumberOfUpdates</PropertyName>
+                            </TableColumnItem>
+                            <TableColumnItem>
+                                <PropertyName>NumberOfCollectionsDeployed</PropertyName>
+                            </TableColumnItem>
+                            <TableColumnItem>
+                                <PropertyName>NumCompliant</PropertyName>
+                            </TableColumnItem>
+                            <TableColumnItem>
+                                <PropertyName>NumTotal</PropertyName>
+                            </TableColumnItem>
+                            <TableColumnItem>
+                                <PropertyName>PercentCompliant</PropertyName>
+                            </TableColumnItem>
+
+                        </TableColumnItems>
+                    </TableRowEntry>
+                </TableRowEntries>
+            </TableControl>
+        </View>
+                <View>
+            <Name>SMS_DesiredConfiguration</Name>
+            <ViewSelectedBy>
+                <TypeName>Microsoft.Management.Infrastructure.CimInstance#root/ccm/dcm/SMS_DesiredConfiguration</TypeName>
+            </ViewSelectedBy>
+            <TableControl>
+                <TableHeaders>
+                    <TableColumnHeader>
+                    </TableColumnHeader>
+                    <TableColumnHeader>
+                    </TableColumnHeader>
+                    <TableColumnHeader>
+                    <Label>LastComplianceStatus</Label>
+                    </TableColumnHeader>
+                    <TableColumnHeader>
+                    </TableColumnHeader>
+                </TableHeaders>
+                <TableRowEntries>
+                    <TableRowEntry>
+                        <TableColumnItems>
+                            <TableColumnItem>
+                                <PropertyName>DisplayName</PropertyName>
+                            </TableColumnItem>
+                            <TableColumnItem>
+                                <PropertyName>Version</PropertyName>
+                            </TableColumnItem>
+                            <TableColumnItem>
+                                <ScriptBlock>[CCM.DCMEvaluationState]($PSItem.LastComplianceStatus)</ScriptBlock>
+                            </TableColumnItem>
+                            <TableColumnItem>
+                                <PropertyName>LastEvalTime</PropertyName>
+                            </TableColumnItem>
                         </TableColumnItems>
                     </TableRowEntry>
                 </TableRowEntries>

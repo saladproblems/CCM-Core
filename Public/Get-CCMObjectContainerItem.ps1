@@ -1,4 +1,4 @@
-Function Get-CCMObjectContainerItem {
+﻿Function Get-CCMObjectContainerItem {
 
     [Alias('Get-SMS_ObjectContainerItem', 'Get-CCMFolderChildItem','gcmfci')]
     [cmdletbinding(DefaultParameterSetName = 'none')]
@@ -34,7 +34,7 @@ Function Get-CCMObjectContainerItem {
                 switch -Regex ($Identity) {
                     '^SMS_ObjectContainerNode'{
                         Get-CimInstance  @cimHash -Filter ($PSItem -replace '^.+?\s')
-                        continue     
+                        continue
                     }
                     '^(\d|\*)+$' {
                         Get-CimInstance @cimHash -Filter ('ContainerNodeID LIKE "{0}"' -f $PSItem -replace '\*', '%' )
@@ -47,7 +47,7 @@ Function Get-CCMObjectContainerItem {
             'Filter' {
                 Get-CimInstance @cimHash -Filter $Filter
             }
-        }        
+        }
 
         if ($result){
             $resultParm = @{
@@ -60,12 +60,12 @@ Function Get-CCMObjectContainerItem {
             $resultKey = (Get-CimClass @resultParm).CimClassProperties |
                 Where-Object {$PSItem.Qualifiers.Name -eq 'key' -or $PSItem.Name -match 'uniqueid$'} |
                     Select-Object -ExpandProperty Name -First 1
-            
+
             $resultFilter = '({0} LIKE "{1}%")' #testing to see if this gets applications - they have a "/<version>" suffix
 
             if ($Property) {
                 $resultParm['Property'] = $Property
-            }   
+            }
             foreach ($a_result in $result){
                 Get-CimInstance @resultParm -Filter ($resultFilter -f $resultKey,$a_result.InstanceKey)
             }

@@ -1,4 +1,4 @@
-Function Get-CCMApplication {
+﻿Function Get-CCMApplication {
     [Alias('Get-SMS_Application')]
     [cmdletbinding(DefaultParameterSetName = 'inputObject')]
 
@@ -19,7 +19,7 @@ Function Get-CCMApplication {
 
     Begin {
         try {
-            $cimHash = $Global:CCMConnection.PSObject.Copy()   
+            $cimHash = $Global:CCMConnection.PSObject.Copy()
         }
         catch {
             Throw 'Not connected to CCM, reconnect using Connect-CCM'

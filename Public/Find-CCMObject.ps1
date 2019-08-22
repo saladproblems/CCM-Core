@@ -1,4 +1,4 @@
-Function Find-CCMObject {
+﻿Function Find-CCMObject {
     [Alias()]
     [cmdletbinding()]
 
@@ -10,7 +10,7 @@ Function Find-CCMObject {
 
     Begin {
         try {
-            $cimHash = $Global:CCMConnection.PSObject.Copy()   
+            $cimHash = $Global:CCMConnection.PSObject.Copy()
         }
         catch {
             Throw 'Not connected to CCM, reconnect using Connect-CCM'
@@ -28,7 +28,7 @@ Function Find-CCMObject {
                 $findParm = @{
                     #the uniqueID for the app includes version number, but the container location does not
                     Filter =  '(InstanceKey = "{0}")' -f ($a_inputObject.($keyProperty.Name) -replace '/\d{1,5}$')
-                }      
+                }
 
                 $containerItem = Get-CimInstance @cimHash @findParm
                 $currentContainerNode = Get-CCMObjectContainerNode -Identity $containerItem.ContainerNodeID
@@ -43,7 +43,7 @@ Function Find-CCMObject {
             while($currentContainerNode.ParentContainerNodeID){
                 Write-Verbose $sb.ToString()
                 $currentContainerNode = Get-CCMObjectContainerNode -Identity $currentContainerNode.ParentContainerNodeID
-                $null = $sb.Insert(0,"\$($currentContainerNode.Name)")                
+                $null = $sb.Insert(0,"\$($currentContainerNode.Name)")
             }
             $sb.ToString()
         }

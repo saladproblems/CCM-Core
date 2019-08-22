@@ -1,5 +1,5 @@
-Function Get-CCMScript {
-    
+﻿Function Get-CCMScript {
+
     [cmdletbinding(DefaultParameterSetName = 'inputObject')]
 
     param(
@@ -10,7 +10,7 @@ Function Get-CCMScript {
         #Specifies an SCCM collection object by providing the collection name or ID.
         [Parameter(Mandatory, ValueFromPipeline, ValueFromPipelineByPropertyName, Position = 0, ParameterSetName = 'Identity')]
         [Alias('ScriptGUID', 'ScriptName')]
-        [string[]]$Identity,       
+        [string[]]$Identity,
 
         [Parameter(ValueFromPipelineByPropertyName = $true, ParameterSetName = 'Author')]
         [string[]]$Author,
@@ -25,8 +25,8 @@ Function Get-CCMScript {
         }
         catch {
             Throw 'Not connected to CCM, reconnect using Connect-CCM'
-        }        
-        $cimHash['ClassName'] = 'SMS_Scripts'             
+        }
+        $cimHash['ClassName'] = 'SMS_Scripts'
     }
 
     Process {
@@ -49,7 +49,7 @@ Function Get-CCMScript {
                 Foreach ($obj in $Filter) {
                     Get-CimInstance @cimHash -Filter $Filter
                 }
-            }           
+            }
         }
     }
 }

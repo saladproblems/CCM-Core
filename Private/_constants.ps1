@@ -1,25 +1,25 @@
-$sbCCMGetCimParm = {
-     try {
-         $Global:CCMConnection.PSObject.Copy()
-     }
-     catch {
-         Throw 'Not connected to CCM, reconnect using Connect-CCM'
-     }
- }
+﻿$sbCCMGetCimParm = {
+    try {
+        $Global:CCMConnection.PSObject.Copy()
+    }
+    catch {
+        Throw 'Not connected to CCM, reconnect using Connect-CCM'
+    }
+}
 
- #region Force confirm prompt for Remove-CimInstance
- <#
+#region Force confirm prompt for Remove-CimInstance
+<#
  I think this is bad practice, but I don't have a good workaround - Remove-CimInstance can delete any CCM objects
  piped to it. Users can override this, but this will make it a bit harder to accidentally remove collections, resources, etc.
  #>
- try {
-      $PSDefaultParameterValues.Add("Remove-CimInstance:Confirm",$true)
- }
- catch{}
+try {
+    $PSDefaultParameterValues.Add("Remove-CimInstance:Confirm", $true)
+}
+catch {}
 #end region Force confirm prompt
 
 #using Add-Type instead of Enum because I want to group by namespace
-Add-Type -TypeDefinition @'
+Add-Type -ErrorAction SilentlyContinue -TypeDefinition @'
 namespace CCM
 {
      public enum Month
@@ -36,7 +36,6 @@ namespace CCM
           October = 10,
           November = 11,
           December = 12
-
      }
      public enum FolderType
      {
@@ -93,6 +92,48 @@ namespace CCM
           Not_Evaluated_Dependency_Failed = 5,
           Evaluated_Remediated_Succeeded = 6,
           Evaluation_Succeeded = 7
+     }
+     public enum EvaluationState
+     {
+          None = 0,
+          Available = 1,
+          Submitted = 2,
+          Detecting = 3,
+          PreDownload = 4,
+          Downloading = 5,
+          WaitInstall = 6,
+          Installing = 7,
+          PendingSoftReboot = 8,
+          PendingHardReboot = 9,
+          WaitReboot = 10,
+          Verifying = 11,
+          InstallComplete = 12,
+          Error = 13,
+          WaitServiceWindow = 14,
+          WaitUserLogon = 15,
+          WaitUserLogoff = 16,
+          WaitJobUserLogon = 17,
+          WaitUserReconnect = 18,
+          PendingUserLogoff = 19,
+          PendingUpdate = 20,
+          WaitingRetry = 21,
+          WaitPresModeOff = 22,
+          WaitForOrchestration = 23
+     }
+     public enum Recurrence {
+          NONE = 1,
+          DAILY = 2,
+          WEEKLY = 3,
+          MONTHLYBYWEEKDAY = 4,
+          MONTHLYBYDATE = 5
+     }
+     public enum DCMEvaluationState {
+          NonCompliant = 0,
+          Compliant = 1,
+          Submitted = 2,
+          Unknown = 3,
+          Detecting = 4,
+          NotEvaluated = 5
      }
 }
 '@

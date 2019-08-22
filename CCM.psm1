@@ -1,25 +1,25 @@
 $sbCCMGetCimParm = {
-     try {
-         $Global:CCMConnection.PSObject.Copy()
-     }
-     catch {
-         Throw 'Not connected to CCM, reconnect using Connect-CCM'
-     }
- }
+    try {
+        $Global:CCMConnection.PSObject.Copy()
+    }
+    catch {
+        Throw 'Not connected to CCM, reconnect using Connect-CCM'
+    }
+}
 
- #region Force confirm prompt for Remove-CimInstance
- <#
+#region Force confirm prompt for Remove-CimInstance
+<#
  I think this is bad practice, but I don't have a good workaround - Remove-CimInstance can delete any CCM objects
  piped to it. Users can override this, but this will make it a bit harder to accidentally remove collections, resources, etc.
  #>
- try {
-      $PSDefaultParameterValues.Add("Remove-CimInstance:Confirm",$true)
- }
- catch{}
+try {
+    $PSDefaultParameterValues.Add("Remove-CimInstance:Confirm", $true)
+}
+catch {}
 #end region Force confirm prompt
 
 #using Add-Type instead of Enum because I want to group by namespace
-Add-Type -TypeDefinition @'
+Add-Type -ErrorAction SilentlyContinue -TypeDefinition @'
 namespace CCM
 {
      public enum Month
@@ -36,7 +36,6 @@ namespace CCM
           October = 10,
           November = 11,
           December = 12
-
      }
      public enum FolderType
      {
@@ -94,6 +93,48 @@ namespace CCM
           Evaluated_Remediated_Succeeded = 6,
           Evaluation_Succeeded = 7
      }
+     public enum EvaluationState
+     {
+          None = 0,
+          Available = 1,
+          Submitted = 2,
+          Detecting = 3,
+          PreDownload = 4,
+          Downloading = 5,
+          WaitInstall = 6,
+          Installing = 7,
+          PendingSoftReboot = 8,
+          PendingHardReboot = 9,
+          WaitReboot = 10,
+          Verifying = 11,
+          InstallComplete = 12,
+          Error = 13,
+          WaitServiceWindow = 14,
+          WaitUserLogon = 15,
+          WaitUserLogoff = 16,
+          WaitJobUserLogon = 17,
+          WaitUserReconnect = 18,
+          PendingUserLogoff = 19,
+          PendingUpdate = 20,
+          WaitingRetry = 21,
+          WaitPresModeOff = 22,
+          WaitForOrchestration = 23
+     }
+     public enum Recurrence {
+          NONE = 1,
+          DAILY = 2,
+          WEEKLY = 3,
+          MONTHLYBYWEEKDAY = 4,
+          MONTHLYBYDATE = 5
+     }
+     public enum DCMEvaluationState {
+          NonCompliant = 0,
+          Compliant = 1,
+          Submitted = 2,
+          Unknown = 3,
+          Detecting = 4,
+          NotEvaluated = 5
+     }
 }
 '@
 #helper function for adding typenames
@@ -103,7 +144,7 @@ this will add the full object classname to the top of PSObject.TypeNames
 #>
 Filter Add-CCMClassType { $PSItem.PSObject.TypeNames.Insert(0,"Microsoft.Management.Infrastructure.CimInstance#$($PSItem.CimClass.CimClassName)");$PSItem }
 Function Add-CCMMembershipDirect {
-    [cmdletbinding(SupportsShouldProcess = $true)]
+    [cmdletbinding()]
 
     param(
         [Parameter()]
@@ -113,7 +154,7 @@ Function Add-CCMMembershipDirect {
         [CimInstance]$Collection
     )
 
-    Begin {      
+    Begin {
         $CimSession = Get-CimSession -InstanceId $Collection.GetCimSessionInstanceId()
         $cimHash = $Global:CCMConnection.PSObject.Copy()
     }
@@ -121,16 +162,16 @@ Function Add-CCMMembershipDirect {
     Process {
 
         ForEach ($obj in $Resource) {
-            $null = New-CimInstance -Namespace $cimHash.Namespace -ErrorAction Stop -OutVariable +cmRule -ClassName SMS_CollectionRuleDirect -ClientOnly -Property @{ 
+            $null = New-CimInstance -Namespace $cimHash.Namespace -ErrorAction Stop -OutVariable +cmRule -ClassName SMS_CollectionRuleDirect -ClientOnly -Property @{
                 ResourceClassName = 'SMS_R_System'
                 RuleName          = '{0} added by {1} via {2} from {3} on {4}' -f $obj.Name, $env:USERNAME, $PSCmdlet.MyInvocation.InvocationName, $CimSession.ComputerName.ToUpper(), (Get-Date -Format 'MM/dd/yyyy hh:mm:ss tt')
                 ResourceID        = $obj.ResourceID
-            } 
-        } 
+            }
+        }
 
     }
 
-    End {        
+    End {
         $Collection | Invoke-CimMethod -MethodName AddMemberShipRules -Arguments @{ CollectionRules = [CimInstance[]]$cmRule } -ErrorAction Stop
 
         $cmRule | Out-String | Write-Verbose
@@ -163,20 +204,20 @@ Function Add-CCMMembershipQuery
         $cimHash = $Global:CCMConnection.PSObject.Copy()
 
         $QueryExpression = @'
-select 
+select
     SMS_R_SYSTEM.ResourceID,
     SMS_R_SYSTEM.ResourceType,
     SMS_R_SYSTEM.Name,
     SMS_R_SYSTEM.SMSUniqueIdentifier,
     SMS_R_SYSTEM.ResourceDomainORWorkgroup,
-    SMS_R_SYSTEM.Client from SMS_R_System 
+    SMS_R_SYSTEM.Client from SMS_R_System
 
-inner join SMS_G_System_SYSTEM on SMS_G_System_SYSTEM.ResourceID = SMS_R_System.ResourceId   
+inner join SMS_G_System_SYSTEM on SMS_G_System_SYSTEM.ResourceID = SMS_R_System.ResourceId
 
-where      
+where
     SMS_G_System_SYSTEM.Name = "{0}"
 
-and       
+and
     (DateDiff(hh, SMS_R_System.CreationDate, GetDate()) < 12)
 
 '@
@@ -188,8 +229,8 @@ and
 
         ForEach ($obj in $ResourceName)
         {
-        
-            $null = New-CimInstance -Namespace $cimHash.Namespace -OutVariable +cmRule -ClassName SMS_CollectionRuleQuery -ClientOnly -Property @{ 
+
+            $null = New-CimInstance -Namespace $cimHash.Namespace -OutVariable +cmRule -ClassName SMS_CollectionRuleQuery -ClientOnly -Property @{
                 RuleName = 'RBBuilds| {0} | {1} added by {2}' -f $ExprirationDate, $obj, $env:USERNAME, $PSCmdlet.MyInvocation.InvocationName, $CimSession.ComputerName.ToUpper(), (Get-Date -Format 'MM/dd/yyyy hh:mm:ss tt')
                 QueryExpression = $QueryExpression -f $ResourceName
             }
@@ -253,7 +294,7 @@ function Connect-CCM {
         if ($Reconnect) {
             $cimSession | Remove-CimSession
         }
-        
+
         $siteParm = @{
             ClassName = 'SMS_ProviderLocation'
             NameSpace = 'root/sms'
@@ -273,7 +314,7 @@ function Connect-CCM {
             NameSpace  = 'root\sms\site_{0}' -f $siteName
         }
     }
-    
+
 }
 Function Find-CCMObject {
     [Alias()]
@@ -287,7 +328,7 @@ Function Find-CCMObject {
 
     Begin {
         try {
-            $cimHash = $Global:CCMConnection.PSObject.Copy()   
+            $cimHash = $Global:CCMConnection.PSObject.Copy()
         }
         catch {
             Throw 'Not connected to CCM, reconnect using Connect-CCM'
@@ -305,7 +346,7 @@ Function Find-CCMObject {
                 $findParm = @{
                     #the uniqueID for the app includes version number, but the container location does not
                     Filter =  '(InstanceKey = "{0}")' -f ($a_inputObject.($keyProperty.Name) -replace '/\d{1,5}$')
-                }      
+                }
 
                 $containerItem = Get-CimInstance @cimHash @findParm
                 $currentContainerNode = Get-CCMObjectContainerNode -Identity $containerItem.ContainerNodeID
@@ -320,7 +361,7 @@ Function Find-CCMObject {
             while($currentContainerNode.ParentContainerNodeID){
                 Write-Verbose $sb.ToString()
                 $currentContainerNode = Get-CCMObjectContainerNode -Identity $currentContainerNode.ParentContainerNodeID
-                $null = $sb.Insert(0,"\$($currentContainerNode.Name)")                
+                $null = $sb.Insert(0,"\$($currentContainerNode.Name)")
             }
             $sb.ToString()
         }
@@ -347,7 +388,7 @@ Function Get-CCMApplication {
 
     Begin {
         try {
-            $cimHash = $Global:CCMConnection.PSObject.Copy()   
+            $cimHash = $Global:CCMConnection.PSObject.Copy()
         }
         catch {
             Throw 'Not connected to CCM, reconnect using Connect-CCM'
@@ -383,7 +424,7 @@ Function Get-CCMApplication {
 
     }
 }
-Function Get-CCMCimClass {   
+Function Get-CCMCimClass {
     [Alias('Get-CCMClass')]
     [cmdletbinding()]
     param(
@@ -394,27 +435,30 @@ Function Get-CCMCimClass {
 
     Begin {
         try {
-            $cimHash = $Global:CCMConnection.PSObject.Copy()   
+            $cimHash = $Global:CCMConnection.PSObject.Copy()
         }
         catch {
             Throw 'Not connected to CCM, reconnect using Connect-CCM'
-        }       
+        }
     }
 
     Process {
         Get-CimClass @cimHash @PSBoundParameters
     }
 }
-Function Get-CCMCimInstance {   
+Function Get-CCMCimInstance {
     [Alias('Get-CCMInstance')]
     [cmdletbinding()]
     param(
-        [Parameter(Mandatory, Position = 0)]
+        [Parameter(Mandatory, Position = 0,ParameterSetName='Class')]
         [Alias('Class')]
         [string]$ClassName,
 
-        [Parameter()]
+        [Parameter(ParameterSetName='Class')]
         [string]$Filter,
+
+        [Parameter(ParameterSetName='Query')]
+        [string]$Query,
 
         [Parameter(Position = 1)]
         [Alias('Properties')]
@@ -423,64 +467,15 @@ Function Get-CCMCimInstance {
 
     Begin {
         try {
-            $cimHash = $Global:CCMConnection.PSObject.Copy()   
+            $cimHash = $Global:CCMConnection.PSObject.Copy()
         }
         catch {
             Throw 'Not connected to CCM, reconnect using Connect-CCM'
-        }        
+        }
     }
 
     Process {
         Get-CimInstance @cimHash @PSBoundParameters
-    }
-}
-function Get-CCMClientExecutionRequest {
-    param (
-        
-        [Parameter(ValueFromPipeline = $true,
-            ValueFromPipelineByPropertyName = $true,
-            ParameterSetName = 'ComputerName',
-            Position = 0,
-            Mandatory = $true)]
-        [string]$ComputerName,
-
-        [Parameter(ParameterSetName = 'ComputerName')]
-        [PSCredential]$Credential 
-
-    )
-
-    Begin
-    {}
-
-    Process {
-        if (-not $CimSession) {
-        
-            try {
-                $CimSession = Get-CimSession -ComputerName $ComputerName -ErrorAction Stop
-            }
-            catch {
-                
-                $cimParm = @{
-                    ComputerName = $ComputerName
-                }
-                if ($Credential) {
-                    $cimParm['Credential'] = $Credential
-                }
-
-                $CimSession = New-CimSession @cimParm -ErrorAction Stop
-            }
-            
-        }
-        
-        $cimParm = @{            
-            OutVariable = 'update'
-            NameSpace   = 'root\ccm\SoftMgmtAgent'
-            ClassName   = 'CCM_ExecutionRequestEx'
-            CimSession  = $CimSession
-        }
-
-        Get-CimInstance @cimParm | ForEach-Object { $PSItem.PSObject.TypeNames.Insert(0, 'Microsoft.Management.Infrastructure.CimInstance.CCM_ExecutionRequestEx') ; $PSItem }
-        
     }
 }
 Function Get-CCMCollection {
@@ -535,9 +530,9 @@ https://github.com/saladproblems/CCM-Core
         [ciminstance[]]$InputObject,
 
         #Specifies an SCCM collection object by providing the collection name or ID.
-        [Parameter(Mandatory, ValueFromPipeline, ValueFromPipelineByPropertyName, Position = 0, ParameterSetName = 'Identity')]
+        [Parameter(ValueFromPipeline, ValueFromPipelineByPropertyName, Position = 0, ParameterSetName = 'Identity')]
         [Alias('ClientName', 'CollectionName', 'CollectionID', 'Name')]
-        [string[]]$Identity,
+        [string[]]$Identity = '*',
 
         #Specifies a where clause to use as a filter. Specify the clause in the WQL query language.
         [Parameter(Mandatory, ParameterSetName = 'Filter')]
@@ -545,6 +540,7 @@ https://github.com/saladproblems/CCM-Core
 
         #Only return collections with service windows - Maintenance windows are a lazy property, requery to view maintenance window info
         [Parameter()]
+        [Parameter(ParameterSetName = 'Identity')]
         [alias('HasServiceWindow')]
         [switch]$HasMaintenanceWindow,
 
@@ -593,16 +589,15 @@ https://github.com/saladproblems/CCM-Core
         }
 
         if ($cimFilter) {
-            $cimFilter = '({0}){1}' -f ($cimFilter -join ' OR '), $HasMaintenanceWindowSuffix
-            Get-CimInstance @cimHash -ClassName SMS_Collection -Filter $cimFilter |
-                Add-CCMClassType
+            $cimFilter = '({0}){1} ORDER BY Name' -f ($cimFilter -join ' OR '), $HasMaintenanceWindowSuffix
+            Get-CimInstance @cimHash -ClassName SMS_Collection -Filter $cimFilter
         }
     }
     End
     {}
 }
-Function Get-CCMCollectionMember {    
-    
+Function Get-CCMCollectionMember {
+
     [cmdletbinding()]
     param(
         #Specifies an SCCM Resource object by providing the 'Name' or 'ResourceID'.
@@ -614,7 +609,7 @@ Function Get-CCMCollectionMember {
         [Parameter(ValueFromPipeline, Mandatory, ParameterSetName = 'inputObject')]
         [ciminstance[]]$inputObject,
 
-        #Specifies a where clause to use as a filter. Specify the clause in either the WQL or the CQL query language.   
+        #Specifies a where clause to use as a filter. Specify the clause in either the WQL or the CQL query language.
         [Parameter(ParameterSetName = 'Filter')]
         [string]$Filter
     )
@@ -622,7 +617,7 @@ Function Get-CCMCollectionMember {
     Begin
     {
         try {
-            $cimHash = $Global:CCMConnection.PSObject.Copy()   
+            $cimHash = $Global:CCMConnection.PSObject.Copy()
         }
         catch {
             Throw 'Not connected to CCM, reconnect using Connect-CCM'
@@ -643,7 +638,7 @@ Function Get-CCMCollectionMember {
             'Identity' {
                 foreach($collection in (Get-CimInstance @cimHash @collParm -filter ($identityFilter -f $Identity.ToWql()) )) {
                     Get-CimInstance @cimHash -ClassName SMS_FullCollectionMembership -Filter ($identityFilter -f $collection.CollectionID)
-                }             
+                }
             }
             'inputObject' {
                 foreach ($a_inputObject in $inputObject) {
@@ -653,16 +648,16 @@ Function Get-CCMCollectionMember {
             'Filter' {
                 Get-CimInstance @cimHash -filter $Filter
             }
-        }     
+        }
     }
 }
-Function Get-CCMCollectionSettings {    
+Function Get-CCMCollectionSettings {
     [cmdletbinding()]
 
     param(
         [ValidateScript( {$PSItem.CimClass.CimClassName -eq 'SMS_Collection'})]
         [Parameter(Mandatory = $true, ValueFromPipeline = $true, Position = 0, ParameterSetName = 'Name')]
-        [CimInstance]$Collection        
+        [CimInstance]$Collection
     )
 
     Begin
@@ -677,7 +672,7 @@ Function Get-CCMCollectionSettings {
 
             Get-CimInstance @cimHash -ClassName SMS_CollectionSettings -Filter "CollectionID = '$($a_Collection.CollectionID)'" | Get-CimInstance
         }
-           
+
     }
 
 }
@@ -717,7 +712,7 @@ Function Get-CCMObjectContainerItem {
                 switch -Regex ($Identity) {
                     '^SMS_ObjectContainerNode'{
                         Get-CimInstance  @cimHash -Filter ($PSItem -replace '^.+?\s')
-                        continue     
+                        continue
                     }
                     '^(\d|\*)+$' {
                         Get-CimInstance @cimHash -Filter ('ContainerNodeID LIKE "{0}"' -f $PSItem -replace '\*', '%' )
@@ -730,7 +725,7 @@ Function Get-CCMObjectContainerItem {
             'Filter' {
                 Get-CimInstance @cimHash -Filter $Filter
             }
-        }        
+        }
 
         if ($result){
             $resultParm = @{
@@ -743,12 +738,12 @@ Function Get-CCMObjectContainerItem {
             $resultKey = (Get-CimClass @resultParm).CimClassProperties |
                 Where-Object {$PSItem.Qualifiers.Name -eq 'key' -or $PSItem.Name -match 'uniqueid$'} |
                     Select-Object -ExpandProperty Name -First 1
-            
+
             $resultFilter = '({0} LIKE "{1}%")' #testing to see if this gets applications - they have a "/<version>" suffix
 
             if ($Property) {
                 $resultParm['Property'] = $Property
-            }   
+            }
             foreach ($a_result in $result){
                 Get-CimInstance @resultParm -Filter ($resultFilter -f $resultKey,$a_result.InstanceKey)
             }
@@ -789,7 +784,7 @@ Function Get-CCMObjectContainerNode {
 
         if ($Property) {
             $cimHash['Property'] = $Property
-        }      
+        }
     }
 
     Process {
@@ -803,7 +798,7 @@ Function Get-CCMObjectContainerNode {
                     '^(%|\d).+$' {
                         Get-CimInstance @cimHash -Filter ('ContainerNodeID LIKE "{0}"' -f ($PSItem -replace '\*', '%' ))
                     }
-                    default {                        
+                    default {
                         Get-CimInstance @cimHash -Filter ('FolderGuid LIKE "{0}" OR Name LIKE "{0}"' -f ($PSItem -replace '\*', '%' ))
                     }
                 }
@@ -875,19 +870,19 @@ https://github.com/saladproblems/CCM-Core
         [Parameter(ValueFromPipeline, Mandatory, ParameterSetName = 'inputObject')]
         [ciminstance]$inputObject,
 
-        #Specifies a where clause to use as a filter. Specify the clause in either the WQL or the CQL query language.   
+        #Specifies a where clause to use as a filter. Specify the clause in either the WQL or the CQL query language.
         [Parameter(ParameterSetName = 'Filter')]
         [string]$Filter
     )
 
     Begin {
         try {
-            $cimHash = $Global:CCMConnection.PSObject.Copy()   
+            $cimHash = $Global:CCMConnection.PSObject.Copy()
         }
         catch {
             Throw 'Not connected to CCM, reconnect using Connect-CCM'
         }
-        $cimHash['ClassName'] = 'SMS_R_System'        
+        $cimHash['ClassName'] = 'SMS_R_System'
     }
 
     Process {
@@ -911,7 +906,7 @@ https://github.com/saladproblems/CCM-Core
                 }
             }
         }
-           
+
     }
 }
 Function Get-CCMResourceMembership {
@@ -923,7 +918,7 @@ Function Get-CCMResourceMembership {
         [Parameter(ValueFromPipeline, ValueFromPipelineByPropertyName, Position = 0, ParameterSetName = 'Identity')]
         [Alias('ClientName', 'ResourceName', 'ResourceID', 'Name')]
         [string[]]$Identity,
-        
+
         #Specifies a CIM instance object to use as input, must be SMS_R_System (returned by "get-CCMResource")
         [Parameter(ValueFromPipeline, Mandatory, ParameterSetName = 'inputObject')]
         [ValidateScript( {$PSItem.CimClass.CimClassName -match 'SMS_R_System|SMS_FullCollectionMembership'})]
@@ -936,19 +931,28 @@ Function Get-CCMResourceMembership {
 
         #Specifies a set of instance properties to retrieve.
         [Parameter()]
-        [string[]]$Property,
+        [string[]]$Property = @('Name','collectionid','lastchangetime','limittocollectionid','limittocollectionname'),
 
         # Parameter help description
         [Parameter()]
         [switch]$ShowResourceName
     )
 
-    Begin {     
+    Begin {
         $cimHash = $Global:CCMConnection.PSObject.Copy()
 
         $cimHash['ClassName'] = 'SMS_FullCollectionMembership'
 
-        if ($Property) { $cimHash['Property'] = $Property }
+        $query = @'
+        SELECT {0}
+        FROM   sms_collection
+               INNER JOIN sms_fullcollectionmembership
+                       ON sms_collection.collectionid =
+                          sms_fullcollectionmembership.collectionid
+        WHERE  sms_fullcollectionmembership.resourceid = {1} AND
+            sms_collection.servicewindowscount > {2}
+        ORDER BY Name,CollectionID
+'@
 
         $getCollParm = @{ HasMaintenanceWindow = $HasMaintenanceWindow.IsPresent }
 
@@ -959,33 +963,28 @@ Function Get-CCMResourceMembership {
 
     Process {
         Write-Debug "Choosing parameterset: '$($PSCmdlet.ParameterSetName)'"
-        Switch ($PSCmdlet.ParameterSetName) {
+        $resourceList = Switch ($PSCmdlet.ParameterSetName) {
             'Identity' {
-                $resourceMembership = switch -Regex ($Identity) {
-                    '^(\d|%)+$' {
-                        Get-CimInstance @cimHash -Filter ('ResourceID LIKE "{0}"' -f $PSItem -replace '\*','%')
-                    }
-                    default {
-                        Get-CimInstance @cimHash -filter ('Name LIKE "{0}"' -f $PSItem -replace '\*','%')
-                    }
-                }
-                if ($ShowResourceName.IsPresent) {
-                    Write-Host "Collection memberships for: '$($resourceMembership[0].Name)'" -ForegroundColor Green
-                }
-                Get-CCMCollection -Identity $resourceMembership.CollectionID @getCollParm |
-                    Write-Output
+                Get-CCMResource $Identity
             }
             'inputObject' {
-                if ($ShowResourceName.IsPresent) {
-                    Write-Host "Collection memberships for '$($inputObject.ResourceID)':" -ForegroundColor Green
-                }
-                $inputObject.ResourceID | Get-CCMResourceMembership @getCollParm
+                Get-CCMResource -inputObject $inputObject
             }
-        }   
+        }
+        $resourceList | ForEach-Object {
+            $ccmParam = @{
+                Query = $query -f ($Property -join ','),$PSItem.ResourceID,($HasMaintenanceWindow.IsPresent -1)
+            }
+            $collection = Get-CimInstance @global:CCMConnection @ccmParam
+            if($ShowResourceName.IsPresent) {
+                Write-Host $PSItem.Name -ForegroundColor Green
+            }
+            Write-Output $collection
+        }
     }
 }
 Function Get-CCMScript {
-    
+
     [cmdletbinding(DefaultParameterSetName = 'inputObject')]
 
     param(
@@ -996,7 +995,7 @@ Function Get-CCMScript {
         #Specifies an SCCM collection object by providing the collection name or ID.
         [Parameter(Mandatory, ValueFromPipeline, ValueFromPipelineByPropertyName, Position = 0, ParameterSetName = 'Identity')]
         [Alias('ScriptGUID', 'ScriptName')]
-        [string[]]$Identity,       
+        [string[]]$Identity,
 
         [Parameter(ValueFromPipelineByPropertyName = $true, ParameterSetName = 'Author')]
         [string[]]$Author,
@@ -1011,8 +1010,8 @@ Function Get-CCMScript {
         }
         catch {
             Throw 'Not connected to CCM, reconnect using Connect-CCM'
-        }        
-        $cimHash['ClassName'] = 'SMS_Scripts'             
+        }
+        $cimHash['ClassName'] = 'SMS_Scripts'
     }
 
     Process {
@@ -1035,7 +1034,7 @@ Function Get-CCMScript {
                 Foreach ($obj in $Filter) {
                     Get-CimInstance @cimHash -Filter $Filter
                 }
-            }           
+            }
         }
     }
 }
@@ -1043,7 +1042,7 @@ Function Get-CCMScriptExecutionStatus {
     [cmdletbinding()]
 
     [alias('Get-CCMScriptsExecutionStatus')]
-    
+
     param(
         [Parameter(ValueFromPipeline = $true)]
         [ciminstance[]]
@@ -1061,7 +1060,7 @@ Function Get-CCMScriptExecutionStatus {
 
     begin {
         try {
-            [hashtable]$cimHash = $Global:CCMConnection.PSObject.Copy()   
+            [hashtable]$cimHash = $Global:CCMConnection.PSObject.Copy()
         }
         catch {
             Throw 'Not connected to CCM, reconnect using Connect-CCM'
@@ -1078,52 +1077,174 @@ Function Get-CCMScriptExecutionStatus {
 
     end {
         $filter = $cimArray.ForEach( { 'ScriptGUID = "{0}"' -f $PSItem.ScriptGuid }) -join ' OR '
-        
+
         Get-CimInstance @cimHash -Filter $filter
     }
 }
+Function Get-CCMSoftwareUpdate {
+
+    [Alias()]
+    [cmdletbinding(DefaultParameterSetName = 'inputObject')]
+
+    param(
+        #Specifies an SCCM Resource object by providing the 'Name' or 'ResourceID'.
+        [Parameter(ValueFromPipeline, Position = 0, ParameterSetName = 'Identity')]
+        [Alias('Name','CI_ID')]
+        [string[]]$Identity='*',
+
+        #Specifies a CIM instance object to use as input.
+        [Parameter(ValueFromPipeline, Mandatory, ParameterSetName = 'inputObject')]
+        [ciminstance]$inputObject,
+
+        #Specifies a where clause to use as a filter. Specify the clause in either the WQL or the CQL query language.
+        [Parameter(ParameterSetName = 'Filter')]
+        [string]$Filter,
+
+        [Parameter()]
+        [string[]]$Property = @('ArticleID','BulletinID','LocalizedDescription','LocalizedDisplayName','LocalizedCategoryInstanceNames')
+    )
+
+    Begin {
+        try {
+            $cimHash = $Global:CCMConnection.PSObject.Copy()
+        }
+        catch {
+            Throw 'Not connected to CCM, reconnect using Connect-CCM'
+        }
+        $cimHash['ClassName'] = 'SMS_SoftwareUpdate'
+    }
+
+    Process {
+        Switch ($PSCmdlet.ParameterSetName) {
+            'Identity' {
+                foreach ($obj in $Identity) {
+                    Get-CimInstance @cimHash -Filter ('ArticleID LIKE "{0}" OR LocalizedDisplayName LIKE "{0}"' -f $obj -replace '\*','%')
+                }
+            }
+            'inputObject' {
+                switch -Regex ($inputObject.CimClass.CimClassName) {
+                    'SMS_G_System_QUICK_FIX_ENGINEERING' {
+                        $cimHash['Property'] = $Property
+                        Get-CimInstance @cimHash -Filter ('articleID = "{0}"' -f ($inputObject.HotFixID -replace '[^0-9]'))
+                    }
+                }
+            }
+            'Filter' {
+                foreach ($obj in $Filter) {
+                    Get-CimInstance @cimHash -filter $obj
+                }
+            }
+        }
+
+    }
+}
+Function Get-CCMSoftwareUpdateGroup {
+<#
+.SYNOPSIS
+
+Gets an SCCM 'Software Update Group' (sug/SMS_AuthorizationList)
+
+.DESCRIPTION
+
+Gets an SCCM 'Software Update Group' (sug/SMS_AuthorizationList) by Name or CI_ID
+
+.OUTPUTS
+Microsoft.Management.Infrastructure.CimInstance#root/sms/site_qtc/SMS_AuthorizationList
+
+.EXAMPLE
+C:\PS> Get-CCMSoftwareUpdateGroup *
+Retrieves all software update groups
+
+.EXAMPLE
+C:\PS> Get-CCMSoftwareUpdateGroup ADR*
+Returns all resources whose  start with ADR
+
+.LINK
+
+https://github.com/saladproblems/CCM-Core
+
+#>
+        [Alias('Get-SMS_AuthorizationList','Get-CCMSUG')]
+        [cmdletbinding(DefaultParameterSetName = 'inputObject')]
+
+        param(
+            #Specifies an SCCM Resource object by providing the 'Name' or 'ResourceID'.
+            [Parameter(ValueFromPipeline, Position = 0, ParameterSetName = 'Identity')]
+            [Alias('Name','CI_ID')]
+            [string[]]$Identity='*',
+
+            #Specifies a CIM instance object to use as input.
+            [Parameter(ValueFromPipeline, Mandatory, ParameterSetName = 'inputObject')]
+            [ciminstance]$inputObject,
+
+            #Specifies a where clause to use as a filter. Specify the clause in either the WQL or the CQL query language.
+            [Parameter(ParameterSetName = 'Filter')]
+            [string]$Filter
+        )
+
+        Begin {
+            try {
+                $cimHash = $Global:CCMConnection.PSObject.Copy()
+            }
+            catch {
+                Throw 'Not connected to CCM, reconnect using Connect-CCM'
+            }
+            $cimHash['ClassName'] = 'SMS_AuthorizationList'
+        }
+
+        Process {
+            Switch ($PSCmdlet.ParameterSetName) {
+                'Identity' {
+                    foreach ($obj in $Identity) {
+                        Get-CimInstance @cimHash -Filter ('LocalizedDisplayName LIKE "{0}" OR ci_id LIKE "{0}"' -f $obj -replace '\*','%')
+                    }
+                }
+                'inputObject' {
+                    $inputObject | Get-CimInstance
+                }
+                'Filter' {
+                    foreach ($obj in $Filter) {
+                        Get-CimInstance @cimHash -filter $obj
+                    }
+                }
+            }
+
+        }
+    }
 Function Get-CCMUserMachineRelationship {
-    [alias('Get-SMS_UserMachineRelationship')]
+    [alias('Get-SMS_UserMachineRelationship', 'Get-CCMClientUserRelationship')]
     [cmdletbinding()]
 
     param(
-
         [Parameter(ValueFromPipeline, ValueFromPipelineByPropertyName, Position = 0, ParameterSetName = 'Identity')]
         [alias('Name')]
         [string[]]$Identity,
 
         [Parameter(ParameterSetName = 'Filter')]
         [string]$Filter,
-        
-        [Parameter()]        
-        [switch]$Active
+
+        [Parameter()]
+        [alias('Active')]
+        [switch]$IsActive
     )
 
     Begin {
         try {
-            $cimHash = $Global:CCMConnection.PSObject.Copy()   
+            $cimHash = $Global:CCMConnection.PSObject.Copy()
             $cimHash['ClassName'] = 'SMS_UserMachineRelationship'
         }
         catch {
             Throw 'Not connected to CCM, reconnect using Connect-CCM'
         }
-
-        $filterSuffix = if ($Active.IsPresent) {
-            'AND (IsActive = {0})' -f [int]($Active.IsPresent)
-        }
-    } 
+    }
 
     Process {
         Switch ($PSCmdlet.ParameterSetName) {
             'Identity' {
                 Foreach ($obj in $Identity) {
                     Write-Verbose $obj
-                    $filter = if ($obj -match '\*') {
-                        "ResourceName LIKE '{0}' OR UniqueUserName LIKE '{0}' $filterSuffix" -f ($obj -replace '\*', '%' -replace '\\', '\\')
-                    }
-                    else {
-                        "ResourceName = '{0}' OR UniqueUserName = '{0}' $filterSuffix" -f ($obj -replace '\\', '\\')
-                    }
+                    $filter = 'ResourceName LIKE "{0}" OR UniqueUserName LIKE "{0}" AND (IsActive = {1})' -f ($obj -replace '\*', '%' -replace '\\+', '\\'), [int]$IsActive.IsPresent
+
                     Get-CimInstance @cimHash -filter $Filter
                 }
                 continue
@@ -1131,7 +1252,7 @@ Function Get-CCMUserMachineRelationship {
             'Filter' {
                 Get-CimInstance @cimHash -filter $Filter
             }
-        }           
+        }
     }
 }
 Function Get-NthWeekDay {
@@ -1153,14 +1274,14 @@ Function Get-NthWeekDay {
 
     begin {
         $FirstDayOfMonth = ([datetime]"$Month/1/$Year").Date
-        $daysInMonth = (($FirstDayOfMonth.AddMonths(1) - $FirstDayOfMonth).totaldays)        
+        $daysInMonth = (($FirstDayOfMonth.AddMonths(1) - $FirstDayOfMonth).totaldays)
     }
     process {
-        
-        $foundDays = 1..$daysInMonth | 
+
+        $foundDays = 1..$daysInMonth |
             ForEach-Object { $FirstDayOfMonth.AddDays($PSItem - 1) } |
             Where-Object { $PSItem.DayOfWeek -eq $DayOfWeek }
-        
+
         try {
             $foundDays[($Nth - 1)]
         }
@@ -1169,100 +1290,6 @@ Function Get-NthWeekDay {
         }
     }
 }
-<# This function should be moved to the CCM client module
-Function Invoke-CCMClientScheduleUpdate
-{
-    [cmdletbinding()]
-
-    param(
-        [string]$ComputerName,
-        [pscredential]$Credential,
-        [switch]$UseDCOM
-    )
-
-    Begin
-    {
-        $x = 0
-
-        $taskList = @'
-            GUID,Task
-            {00000000-0000-0000-0000-000000000003},Discovery Data Collection Cycle
-			{00000000-0000-0000-0000-000000000001},Hardware Inventory Cycle
-            {00000000-0000-0000-0000-000000000002},Software Inventory Cycle
-            {00000000-0000-0000-0000-000000000021},Machine Policy Retrieval Cycle
-            {00000000-0000-0000-0000-000000000022},Machine Policy Evaluation Cycle
-            {00000000-0000-0000-0000-000000000108},Software Updates Assignments Evaluation Cycle
-            {00000000-0000-0000-0000-000000000113},Software Update Scan Cycle
-            {00000000-0000-0000-0000-000000000110},DCM policy
-
-'@ | ConvertFrom-Csv
-        
-    }
-
-
-    Process
-    {
-        
-        foreach ($aComputerName in $ComputerName)
-        {
-            $cimParm = @{
-                ComputerName = $aComputerName
-                ErrorAction = 'Stop'
-            }
-
-            if ($Credential){ $cimParm['Credential'] = $Credential }
-            if ($UseDCOM) { $cimParm['SessionOption'] = New-CimSessionOption -Protocol Dcom }
-            
-            try
-            {        
-                $CimSession = Get-CimSession -ComputerName $aComputerName -ErrorAction Stop
-            }
-
-            catch
-            {
-                $CimSession = New-CimSession @cimParm
-            }
-            if (-not $CimSession) 
-            { 
-                Write-Warning "Could not connect to $ComputerName"
-                continue
-            }
-
-            $taskList | ForEach-Object {
-                  
-                $x++
-                           
-                $compProgressParm = @{
-                    CurrentOperation = $PSItem.Task 
-                    Activity = "$aComputerName - Triggering CCM client update Schedules" 
-                    Status = "$x of $($taskList.Count)"
-                    PercentComplete = 100*($x/$taskList.Count)
-                }
-                                
-                Write-Progress @compProgressParm
-
-                $taskProgressParm = @{
-                    CimSession = $CimSession 
-                    Namespace = 'root/ccm'
-                    Class = 'SMS_CLIENT'
-                    Name = 'TriggerSchedule'
-                    Arguments = @{ sScheduleID = $PSItem.GUID } 
-                    ErrorAction = 'SilentlyContinue'
-                }
-
-                Invoke-CimMethod @taskProgressParm
-
-                if ($UseDCOM)
-                {
-                    $null = $CimSession | Get-CimInstance -ClassName Win32_Service -Filter "Name = 'winrm'" | Invoke-CimMethod -MethodName StartService
-                }
-
-            }
-        }
-    }
-
-}
-#>
 Function Invoke-CCMCollectionRefresh {
 
     [cmdletbinding()]
@@ -1273,19 +1300,12 @@ Function Invoke-CCMCollectionRefresh {
         [switch]$Wait
     )
 
-    Begin {
-        $spin = @{
-            0 = '\'
-            1 = '|'
-            2 = '/'
-            3 = '-'
-        }
-    }
+    Begin {}
 
     Process {
         foreach ($obj in $Collection) {
             $time = $obj.LastRefreshTime
-            
+
             $null = $obj | Invoke-CimMethod -MethodName RequestRefresh
 
             '{0}: Collection "{1}" updated {2}' -f $MyInvocation.InvocationName, $obj.name, $obj.LastRefreshTime | Write-Verbose
@@ -1295,19 +1315,19 @@ Function Invoke-CCMCollectionRefresh {
             $x = $null
 
             While ( $Wait -and $obj.LastRefreshTime -eq $time -and $x -le 6000 ) {
-                
+
                 $x++
-                Write-Progress -Activity 'Waiting for Collection Refresh' -Status "Collection $($obj.Name)" -CurrentOperation $spin[($x % 4)]
+                Write-Progress -Activity 'Waiting for Collection Refresh' -Status "Collection $($obj.Name)"
                 if ( ($x % 30) -eq 0 ) {
-                    '{0}: waiting for "{1}", {2} seconds elapsed' -f $MyInvocation.InvocationName, $obj.Name, $x | 
+                    '{0}: waiting for "{1}", {2} seconds elapsed' -f $MyInvocation.InvocationName, $obj.Name, $x |
                         Write-Verbose
                 }
-                
+
                 Start-Sleep -Seconds 1
                 $obj = $obj | Get-CimInstance
             }
 
-            '{0}: Collection "{1}" updated {2}' -f $MyInvocation.InvocationName, $obj.name, $obj.LastRefreshTime | 
+            '{0}: Collection "{1}" updated {2}' -f $MyInvocation.InvocationName, $obj.name, $obj.LastRefreshTime |
                 Write-Verbose
 
             $obj
@@ -1316,79 +1336,6 @@ Function Invoke-CCMCollectionRefresh {
     }
 
 }
-<#This function should be moved to the CCM client module
-
-Function Invoke-CCMPackageRerun
-{
-    [cmdletbinding()]
-
-    param(
-        [string[]]$ComputerName = $env:COMPUTERNAME,
-        [pscredential]$Credential
-    )
-
-    Begin
-    {
-        $rerunSB = {
-        
-            Get-CimInstance -ClassName CCM_SoftwareDistribution -namespace root\ccm\policy\machine/ActualConfig -OutVariable Advertisements | Set-CimInstance -Property @{ 
-                ADV_RepeatRunBehavior = 'RerunAlways'
-                ADV_MandatoryAssignments = $True
-            }
-
-            foreach ($a_Advertisement in $Advertisements)
-            {
-                Write-Verbose -Message "Searching for schedule for package: $() - $($a_Advertisement.PKG_Name)"
-                Get-CimInstance -ClassName CCM_Scheduler_ScheduledMessage -namespace "ROOT\ccm\policy\machine\actualconfig" -filter "ScheduledMessageID LIKE '$($a_Advertisement.ADV_AdvertisementID)%'" | 
-                    ForEach-Object {
-
-                        $null = Invoke-CimMethod -Namespace 'root\ccm' -ClassName SMS_CLIENT -MethodName TriggerSchedule @{ sScheduleID = $PSItem.ScheduledMessageID }
-
-                        [pscustomobject]@{
-                            PKG_Name = $a_Advertisement.PKG_Name
-                            ADV_AdvertisementID = $a_Advertisement.ADV_AdvertisementID
-                            sScheduleID = $PSItem.ScheduledMessageID
-                        }
-                    }
-            }
-            
-        }
-
-        $ComputerList = [System.Collections.Generic.List[string]]::new()
-    }
-
-    Process
-    {
-        $ComputerList.AddRange( ([string[]]$ComputerName) )
-    }
-
-    End
-    {
-        $invokeParm = @{
-                ScriptBlock = $rerunSB                
-        }
-
-        $invokeParm['ComputerName'] = $ComputerList
-        
-        if ($Credential){
-            $invokeParm['Credential'] = $Credential
-        }
-
-        if ($ComputerName -eq $env:COMPUTERNAME)
-        {
-            $invokeParm.Remove('Credential')
-            $invokeParm.Remove('ComputerName')
-        }
-
-        $invokeParm | Out-String | Write-Verbose
-
-        Invoke-Command @invokeParm
-    }
-
-}
-
-#https://kelleymd.wordpress.com/2015/02/08/run-local-advertisement-with-triggerschedule/
-#>
 Function New-CCMCollection
 {
     [cmdletbinding()]
@@ -1410,7 +1357,7 @@ Function New-CCMCollection
     )
 
     Begin
-    {       
+    {
         $cimHash = $sbCCMGetCimParm.InvokeReturnAsIs()
     }
 
@@ -1427,128 +1374,88 @@ Function New-CCMCollection
         }
 
         $newCollectionProperty | Out-String | Write-Verbose
-        
+
         New-CimInstance -OutVariable newCollection @cimHash -ClassName SMS_Collection -Property $newCollectionProperty
     }
 }
-<#This function should be moved to the client function module
+Function Remove-CCMMembershipDirect {
+    [cmdletbinding(SupportsShouldProcess, ConfirmImpact = 'High')]
 
-function Start-CCMClientComplianceSettingsEvaluation
-{
-    [cmdletbinding()]
-    
-    [alias('Start-DCMComplianceEvaluation')]
+    param(
+        [Parameter()]
+        [CimInstance[]]$Resource,
 
-    param (
-        
-        [Parameter(ValueFromPipeline=$true,
-            ValueFromPipelineByPropertyName=$true,
-            ParameterSetName='ComputerName',
-            Position=0,
-            Mandatory=$true)]
-        [string]$ComputerName,
-
-        [Parameter(ParameterSetName='ComputerName')]
-        [PSCredential]$Credential,
-
-        [Parameter(ValueFromPipeline=$true,
-            ValueFromPipelineByPropertyName=$true, 
-            ValueFromRemainingArguments=$false,
-            ParameterSetName='CimSession',
-            Mandatory=$true)]
-        [Microsoft.Management.Infrastructure.CimSession]$CimSession,        
-
-        [switch]$WaitForEvalutaion
+        [Parameter()]
+        [CimInstance]$Collection
     )
 
-    Begin
-    {
-        $LastComplianceStatusHash = @{
-            0 = 'Non-Compliant'
-            1 = 'Compliant'
-            2 = 'Submitted'
-            3 = 'Unknown'
-            4 = 'Detecting'
-            5 = 'Not Evaluated'                  
-        }  
-        <#
-        $StatusHash = @{
-            0 = 'Idle'
-            1 = 'Evaluated'
-            5 = 'Not Evaluated'                                   
-        }         
-}
+    Process {
+        [ciminstance[]]$collRule = Get-CimInstance -InputObject $Collection |
+            Select-Object -ExpandProperty CollectionRules |
+            Where-Object -Property ResourceID -In $Resource.ResourceID
 
-    Process
-    {
-        if (-not $CimSession)
-        {
-        
-            try
-            {
-                $CimSession = Get-CimSession -ComputerName $ComputerName -ErrorAction Stop
-            }
-            catch
-            {
-                
-                $cimParm = @{
-                    ComputerName = $ComputerName
-                }
-                if ($Credential)
-                {
-                    $cimParm['Credential'] = $Credential
-                }
+        if (-not $collRule) { continue }
 
-                $CimSession = New-CimSession @cimParm -ErrorAction Stop
-            }
-            
+        If ($PSCmdlet.ShouldProcess("$($Collection.Name): $($collRule.RuleName -join ',')")) {
+            Invoke-CimMethod -InputObject $Collection -MethodName DeleteMembershipRules -Arguments @{ collectionRules = $collRule }
         }
-
-        $systemTime = [system.management.ManagementDateTimeConverter]::ToDmtfDateTime(($CimSession | Get-CimInstance Win32_OperatingSystem).LocalDateTime.addminutes(-10))
-
-        $cimParm = @{                        
-            NameSpace = 'root\ccm\dcm'
-            ClassName = 'SMS_DesiredConfiguration'
-            CimSession = $CimSession
-        }
-
-        $baseline = Get-CimInstance @cimParm
-        
-        foreach ($obj in $baseline)
-        {            
-            $null = Invoke-CimMethod -CimSession $CimSession -InputObject $obj -MethodName TriggerEvaluation -Arguments @{ Name = $obj.Name; version = $obj.Version }            
-        }
-
-        $cimParm['Filter'] = "LastEvalTime < '$systemTime' OR LastComplianceStatus = 3"
-            
-        While ( $WaitForEvalutaion -and (Get-CimInstance @cimParm) -and $x -le 5)
-        {
-            foreach ($obj in $baseline)
-            {
-                if (-not $x)
-                {
-                    $null = Invoke-CimMethod -ErrorAction Stop -InputObject $obj -MethodName TriggerEvaluation -Arguments @{ Name = $obj.Name; version = $obj.Version }
-                }
-            }
-            
-            Write-Progress -Activity 'Refreshing compliance items' -Status "$($update.count) items remaining"
-            $x++
-
-            foreach ($obj in $baseline)
-            {
-                $null = Invoke-CimMethod -InputObject $obj -MethodName TriggerEvaluation -Arguments @{ Name = $obj.Name; version = $obj.Version }
-            }
-        
-            Start-Sleep -Seconds 10
-        }
-
-        $cimParm.Remove('Filter')
-
-        Get-CimInstance @cimParm | Select-Object @{Name="ComputerName";Expression={$PSItem.PSComputerName}}, 
-            @{Name="DisplayName";Expression={ '{0}: v{1}' -f $PSItem.DisplayName,$PSItem.Version }},
-            #@{Name="Status";Expression={$PSItem.Status}},
-            @{Name="LastComplianceStatus";Expression={ $LastComplianceStatusHash[ [int]($PSItem.LastComplianceStatus) ] }}, 
-            @{Name="LastEvalTime";Expression={Get-Date $PSItem.LastEvalTime}}
     }
 }
-#>
+#null
+function Wait-CCMClientSoftwareUpdate {
+    [cmdletbinding()]
+    param (
+        [Alias('Wait-CCMClientSoftwareUpdateInstallation')]
+        [Parameter(ValueFromPipeline = $true,
+            ValueFromPipelineByPropertyName = $true,
+            ParameterSetName = 'ComputerName',
+            Position = 0,
+            Mandatory = $true)]
+        [alias('Name')]
+        [string[]]$ComputerName,
+
+        [Parameter(ParameterSetName = 'ComputerName')]
+        [PSCredential]$Credential,
+
+        [Parameter(ParameterSetName = 'CimSession')]
+        [CimSession[]]$CimSession,
+
+        [switch]$Quiet,
+
+        [int]$Interval = 5
+    )
+
+    begin {
+        $cimParam = @{
+            NameSpace = 'root/ccm/ClientSDK'
+            ClassName = 'CCM_SoftwareUpdate'
+            Filter = 'EvaluationState < 8'
+        }
+    }
+    process {
+        Switch ($PSCmdlet.ParameterSetName) {
+            'ComputerName' {
+                $cimParam['ComputerName'] = $ComputerName
+
+                if ($Credential) {
+                    $cimParam['Credential'] = $Credential
+                }
+            }
+
+            'CimSession' {
+                $cimParam['CimSession'] = $CimSession
+            }
+        }
+
+        While (($updates = Get-CimInstance @cimParam)) {
+            $updates | ForEach-Object {
+                Write-Progress -Activity 'Waiting for patch installation' -CurrentOperation $PSItem.PSComputerName -Status ('{0}: {1}' -f [CCM.EvaluationState]$PSItem.EvaluationState,$PSItem.Name)
+            }
+            if (-not $Quiet.IsPresent){
+                $updates | Out-String | Write-Host -ForegroundColor Green
+            }
+            Start-Sleep -Seconds $Interval
+        }
+    }
+    end {}
+}
