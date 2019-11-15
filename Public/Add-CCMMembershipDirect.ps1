@@ -3,6 +3,7 @@
 
     param(
         [Parameter()]
+        [ValidateScript({$PSItem.CimSystemProperties.ClassName -match '^sms_r_(system|user)'})]
         [CimInstance[]]$Resource,
 
         [Parameter()]
@@ -18,7 +19,7 @@
 
         ForEach ($obj in $Resource) {
             $null = New-CimInstance -Namespace $cimHash.Namespace -ErrorAction Stop -OutVariable +cmRule -ClassName SMS_CollectionRuleDirect -ClientOnly -Property @{
-                ResourceClassName = 'SMS_R_System'
+                ResourceClassName = $obj.CimSystemProperties.ClassName
                 RuleName          = '{0} added by {1} via {2} from {3} on {4}' -f $obj.Name, $env:USERNAME, $PSCmdlet.MyInvocation.InvocationName, $CimSession.ComputerName.ToUpper(), (Get-Date -Format 'MM/dd/yyyy hh:mm:ss tt')
                 ResourceID        = $obj.ResourceID
             }

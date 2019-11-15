@@ -1,5 +1,5 @@
 ﻿Function Get-CCMResource {
-<#
+    <#
 .SYNOPSIS
 
 Get an SCCM Resource
@@ -25,21 +25,20 @@ https://github.com/saladproblems/CCM-Core
 
 #>
     [Alias('Get-SMS_R_System')]
-    [cmdletbinding(DefaultParameterSetName = 'inputObject')]
+    [cmdletbinding()]
 
     param(
         #Specifies an SCCM Resource object by providing the 'Name' or 'ResourceID'.
-        [Parameter(ValueFromPipeline = $true, Position = 0, ParameterSetName = 'Identity')]
-        [Alias('Name','ClientName','ResourceName''ResourceID')]
-        [string[]]$Identity,
-
-        #Specifies a CIM instance object to use as input.
-        [Parameter(ValueFromPipeline, Mandatory, ParameterSetName = 'inputObject')]
-        [ciminstance]$inputObject,
+        [Parameter(Mandatory, ValueFromPipeline = $true, Position = 0, ParameterSetName = 'Identity')]
+        [Alias('Name', 'ClientName', 'ResourceName', 'ResourceID', 'InputObject')]
+        [object[]]$Identity,
 
         #Specifies a where clause to use as a filter. Specify the clause in either the WQL or the CQL query language.
-        [Parameter(ParameterSetName = 'Filter')]
-        [string]$Filter
+        [Parameter(Mandatory, ParameterSetName = 'Filter')]
+        [string[]]$Filter,
+
+        [Parameter()]
+        [string[]]$Property = '*'
     )
 
     Begin {
@@ -49,30 +48,32 @@ https://github.com/saladproblems/CCM-Core
         catch {
             Throw 'Not connected to CCM, reconnect using Connect-CCM'
         }
-        $cimHash['ClassName'] = 'SMS_R_System'
+        [string]$propertyString = $Property -replace '^', 'SMS_R_System.' -join ','
     }
 
     Process {
-        Switch ($PSCmdlet.ParameterSetName) {
-            'Identity' {
-                switch -Regex ($Identity)  {
-                   '^(%|\d).+$' {
-                        Get-CimInstance @cimHash -Filter ('ResourceID LIKE "{0}"' -f $PSItem -replace '\*','%')
+        Switch ($Identity) {
+            { $PSItem -is [string] } {
+                Get-CimInstance @cimHash -Query ('SELECT {0} FROM SMS_R_System WHERE ResourceId LIKE "{1}" OR Name LIKE "{1}"' -f $propertyString, ($PSItem -replace '\*', '%'))                   
+            }
+            { $PSItem -is [ciminstance] } {
+                switch ($PSItem) {
+                    {$PSItem.CimSystemProperties.ClassName -eq 'SMS_R_System'} {
+                        Get-CimInstance -InputObject $PSItem
+                    }
+                    {$PSItem.CimSystemProperties.ClassName -eq 'SMS_Collection'} {
+                        Get-CimInstance @cimHash -Query ('SELECT {0} FROM SMS_R_System INNER JOIN SMS_FullCollectionMembership ON SMS_R_System.ResourceId = SMS_FullCollectionMembership.ResourceId WHERE CollectionId = "{1}"' -f $propertyString, $PSItem.CollectionId)
                     }
                     default {
-                        Get-CimInstance @cimHash -filter ('Name LIKE "{0}"' -f $PSItem -replace '\*','%')
+                        $PSItem.CimSystemProperties.ClassName
                     }
-                }
-            }
-            'inputObject' {
-                $inputObject | Get-CimInstance
-            }
-            'Filter' {
-                Foreach ($obj in $Filter) {
-                    Get-CimInstance @cimHash -filter $Filter
                 }
             }
         }
-
+        if ($Filter) {        
+            $Filter | ForEach-Object {
+                Get-CimInstance @cimHash -Query ("SELECT {0} FROM SMS_R_System WHERE {1}" -f $propertyString, $PSItem)
+            }
+        }
     }
 }
