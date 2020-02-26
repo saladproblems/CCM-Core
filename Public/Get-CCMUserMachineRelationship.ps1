@@ -36,8 +36,6 @@
                     }
 
                     Get-CimInstance @cimHash -filter $Filter
-
-                    $PSBoundParameters | Out-String | Write-Host
                 }
                 continue
             }

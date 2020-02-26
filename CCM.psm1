@@ -346,6 +346,38 @@ function Connect-CCM {
 <#
 placeholder for converting hardware inventory queries to readable format
 #>
+#Find resources by collection, for use wth getting clients from multiple collections at once
+
+function Find-CCMClientByCollection {
+    [cmdletbinding()]    
+
+    param(
+        [CimInstance[]]$Collection
+    )
+    begin {
+
+        $whereTemplate = @'
+ResourceId in (
+    Select ResourceId FROM sms_fullcollectionmembership
+        WHERE CollectionId = "{0}"
+)
+'@
+
+        $where = $Collection.ForEach( { $whereTemplate -f $PSItem.CollectionId } ) -join ' AND '
+
+        $query = @'
+SELECT * FROM SMS_R_System
+INNER JOIN sms_fullcollectionmembership
+                ON SMS_R_System.ResourceId =
+                    sms_fullcollectionmembership.ResourceId
+WHERE  {0}
+'@ -f $where
+    }
+
+    process {
+        Get-CimInstance -Query $query @global:CCMConnection
+    }
+}
 Function Find-CCMObject {
     [Alias()]
     [cmdletbinding()]
@@ -512,11 +544,11 @@ function Get-CCMCimInstanceByResourceName {
 <#
 .SYNOPSIS
 
-Searches for a resource by resource ID or name
+Searches for a ccm class by resource ID or name
 
 .DESCRIPTION
 
-Searches for a resource by resource ID or name, meant to be a helper function for finding hardware inventory information. This function outputs PS Objects with a the resource record and each additional class as properties with the same name.
+Searches for a ccm class by resource ID or name, meant to be a helper function for finding hardware inventory information. This function outputs PS Objects with a the resource record and each additional class as properties with the same name.
 
 .EXAMPLE
 C:\PS> Find-CCMRecordByResource -Identity ComputerName1, ComputerName2 -ClassName SMS_G_System_NETWORK_ADAPTER, SMS_G_System_PC_BIOS
@@ -980,7 +1012,7 @@ https://github.com/saladproblems/CCM-Core
 
     Process {
         Switch ($Identity) {
-            { $PSItem -is [string] } {
+            { $PSItem -is [string] -or $PSItem -is [int] } {
                 Get-CimInstance @cimHash -Query ('SELECT {0} FROM SMS_R_System WHERE ResourceId LIKE "{1}" OR Name LIKE "{1}"' -f $propertyString, ($PSItem -replace '\*', '%'))                   
             }
             { $PSItem -is [ciminstance] } {
@@ -995,6 +1027,9 @@ https://github.com/saladproblems/CCM-Core
                         $PSItem.CimSystemProperties.ClassName
                     }
                 }
+            }
+            default {
+                Write-Error ('Did not recognize Identity: {0}' -f $Identity)
             }
         }
         if ($Filter) {        
@@ -1344,8 +1379,6 @@ Function Get-CCMUserMachineRelationship {
                     }
 
                     Get-CimInstance @cimHash -filter $Filter
-
-                    $PSBoundParameters | Out-String | Write-Host
                 }
                 continue
             }

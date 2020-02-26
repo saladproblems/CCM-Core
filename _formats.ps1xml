@@ -39,7 +39,7 @@
                                 <PropertyName>MemberCount</PropertyName>
                             </TableColumnItem>
                             <TableColumnItem>
-                                <PropertyName>LastChangeTime</PropertyName>
+                                <PropertyName>LastRefreshTime</PropertyName>
                             </TableColumnItem>
                             <TableColumnItem>
                                 <PropertyName>LimitToCollectionID</PropertyName>
@@ -61,22 +61,18 @@
             <TableControl>
                 <TableHeaders>
                     <TableColumnHeader>
-                        <Label>Name</Label>
                         <Width>15</Width>
                     </TableColumnHeader>
                     <TableColumnHeader>
-                        <Label>ResourceId</Label>
-                        <Width>15</Width>
+                        <Width>10</Width>
                     </TableColumnHeader>
                     <TableColumnHeader>
                         <Width>15</Width>
                     </TableColumnHeader>
                     <TableColumnHeader>
-                        <Label>OperatingSystemNameandVersion</Label>
                         <Width>35</Width>
                     </TableColumnHeader>
                     <TableColumnHeader>
-                        <Label>FullDomainName</Label>
                         <Width>20</Width>
                     </TableColumnHeader>
                 </TableHeaders>
@@ -93,7 +89,7 @@
                                 <PropertyName>ClientVersion</PropertyName>
                             </TableColumnItem>
                             <TableColumnItem>
-                                <PropertyName>OperatingSystemNameandVersion</PropertyName>
+                                <PropertyName>operatingSystem</PropertyName>
                             </TableColumnItem>
                             <TableColumnItem>
                                 <PropertyName>FullDomainName</PropertyName>
