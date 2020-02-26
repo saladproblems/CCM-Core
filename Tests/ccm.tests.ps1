@@ -6,6 +6,7 @@ param(
 )
 
 Remove-Module CCM -ErrorAction SilentlyContinue
+get-module ccm -ListAvailable | Sort-Object version | Select-Object -Last 1 | Import-Module
 
 Describe "CCM module function checks" {
     $localhostResource = Get-CCMResource -Identity $ResourceName
@@ -24,14 +25,14 @@ Describe "CCM module function checks" {
             $localhostResource | should -BeOfType [ciminstance]
         }
         it "Find resource by ResourceID" {
-            $localhostResource.ResourceID | Get-CCMResource |
-                should -BeOfType [ciminstance]
+            $localhostResource.ResourceID | Get-CCMResource | should -BeOfType [ciminstance]
         }
         it "Requery resource CimInstance" {
-            $localhostResource | Get-CCMResource
+            $localhostResource | Get-CCMResource | should -BeOfType [ciminstance]
         }
         it "Find resource by Query" {
-            Get-CCMResource -Filter "name = '$ResourceName'"
+            Get-CCMResource -Filter "name = '$ResourceName'" |
+                should -BeOfType [ciminstance]
         }
     }
 

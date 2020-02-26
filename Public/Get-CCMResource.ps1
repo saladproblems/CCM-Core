@@ -53,7 +53,7 @@ https://github.com/saladproblems/CCM-Core
 
     Process {
         Switch ($Identity) {
-            { $PSItem -is [string] -or $PSItem -is [int] } {
+            { $PSItem -is [string] -or $PSItem -match '^\d+$' } {
                 Get-CimInstance @cimHash -Query ('SELECT {0} FROM SMS_R_System WHERE ResourceId LIKE "{1}" OR Name LIKE "{1}"' -f $propertyString, ($PSItem -replace '\*', '%'))                   
             }
             { $PSItem -is [ciminstance] } {
@@ -69,8 +69,9 @@ https://github.com/saladproblems/CCM-Core
                     }
                 }
             }
+            { -not $PSItem } {}
             default {
-                Write-Error ('Did not recognize Identity: {0}' -f $Identity)
+                Write-Error ('Did not recognize Identity: {0}{1}' -f $Identity,$Identity.GetType())
             }
         }
         if ($Filter) {        
