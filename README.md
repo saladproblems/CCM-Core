@@ -1,5 +1,5 @@
 # CCM-Core
-A lightweight module for managing SCCM resources and collections that relies on CIM cmdlets and is compatible with PowerShell 6.0
+A lightweight module for managing SCCM resources and collections that relies on CIM cmdlets and is compatible with PowerShell Core and 7.0
 
 Purpose:
 * Get-WMIObject is deprecated and isn't currently in PowerShell 7.0, to show how to use CIM cmdlets (wmi 2.0)
@@ -35,3 +35,5 @@ When Contributing:
 ### SupportFunctions
 - Add-CCMClassType
 - Get-NthWeekDay (Get-PatchTuesday)
+
+### Classes
