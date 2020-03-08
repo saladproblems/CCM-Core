@@ -2,7 +2,7 @@
 A lightweight module for managing SCCM resources and collections that relies on CIM cmdlets and is compatible with PowerShell 6.0
 
 Purpose:
-* Get-WMIObject is deprecated and isn't currently in PowerShell 6.0, show how to use CIM cmdlets (wmi 2.0)
+* Get-WMIObject is deprecated and isn't currently in PowerShell 7.0, to show how to use CIM cmdlets (wmi 2.0)
 * Provide a faster, lightweight alternative to the Microsoft SCCM module
 * Allow more complex WQL filtering than is offered by the SCCM module
 
@@ -11,6 +11,9 @@ Design Goals:
 	* All output should work with built-in CIM functionality - Get-CimInstance, Set-CimInstance, Remove-CimInstance, Invoke-CimMethod should work with output
 * Every function should have Filter and Property parameters
 * Use format and type files to manipulate output without changing object types
+
+When Contributing:
+* When contributing to the module please update the .PS1, ps1xml, etc. files, but not the PSD1 or PSM1 directly. I'm working on improving my pipeline, and the supporting files like the manifest/module are created dynamically from the .ps1 files, so any manual changes to the PSM1 are ultimately overwritten
 
 ### Primary Functions:
 - Add-CCMMembershipDirect
