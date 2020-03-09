@@ -142,13 +142,13 @@ namespace CCM
 some objects with lazy properties use Microsoft.Management.Infrastructure.CimInstance#__PartialCIMInstance
 this will add the full object classname to the top of PSObject.TypeNames
 #>
-Filter Add-CCMClassType { $PSItem.PSObject.TypeNames.Insert(0,"Microsoft.Management.Infrastructure.CimInstance#$($PSItem.CimClass.CimClassName)");$PSItem }
+Filter Add-CCMClassType { $PSItem.PSObject.TypeNames.Insert(0, "Microsoft.Management.Infrastructure.CimInstance#$($PSItem.CimClass.CimClassName)"); $PSItem }
 Function Add-CCMMembershipDirect {
     [cmdletbinding()]
 
     param(
         [Parameter()]
-        [ValidateScript({$PSItem.CimSystemProperties.ClassName -match '^sms_r_(system|user)'})]
+        [ValidateScript( {$PSItem.CimSystemProperties.ClassName -match '^sms_r_(system|user)'})]
         [CimInstance[]]$Resource,
 
         [Parameter()]
@@ -277,7 +277,7 @@ class ccmResourceTransform:System.Management.Automation.ArgumentTransformationAt
 }
 #>
 function Connect-CCM {
- <#
+    <#
     .SYNOPSIS
         This function establishes a connection to an SCCM Server system.
 
@@ -400,30 +400,30 @@ Function Find-CCMObject {
     }
 
     Process {
-        foreach ($a_inputObject in $inputObject){
-            if ($a_inputObject.CimClass.CimClassName -ne 'SMS_ObjectContainerNode'){
-                $keyProperty = $a_inputObject.CimClass.CimClassProperties.Where({$_.Qualifiers.Name -eq 'key' -or $_.Name -match 'uniqueid$'}) |
+        foreach ($a_inputObject in $inputObject) {
+            if ($a_inputObject.CimClass.CimClassName -ne 'SMS_ObjectContainerNode') {
+                $keyProperty = $a_inputObject.CimClass.CimClassProperties.Where( {$_.Qualifiers.Name -eq 'key' -or $_.Name -match 'uniqueid$'}) |
                     Sort-Object { $PSItem.name -match 'uniqueid'} |
-                        Select-Object -Last 1
+                    Select-Object -Last 1
                 $findParm = @{
                     #the uniqueID for the app includes version number, but the container location does not
-                    Filter =  '(InstanceKey = "{0}")' -f ($a_inputObject.($keyProperty.Name) -replace '/\d{1,5}$')
+                    Filter = '(InstanceKey = "{0}")' -f ($a_inputObject.($keyProperty.Name) -replace '/\d{1,5}$')
                 }
 
                 $containerItem = Get-CimInstance @cimHash @findParm
                 $currentContainerNode = Get-CCMObjectContainerNode -Identity $containerItem.ContainerNodeID
             }
-            else{
+            else {
                 $currentContainerNode = $a_inputObject
             }
 
             $sb = [System.Text.StringBuilder]::new()
             $null = $sb.Append("\$($currentContainerNode.Name)")
 
-            while($currentContainerNode.ParentContainerNodeID){
+            while ($currentContainerNode.ParentContainerNodeID) {
                 Write-Verbose $sb.ToString()
                 $currentContainerNode = Get-CCMObjectContainerNode -Identity $currentContainerNode.ParentContainerNodeID
-                $null = $sb.Insert(0,"\$($currentContainerNode.Name)")
+                $null = $sb.Insert(0, "\$($currentContainerNode.Name)")
             }
             $sb.ToString()
         }
@@ -465,7 +465,7 @@ Function Get-CCMApplication {
         Write-Debug "Choosing parameterset: '$($PSCmdlet.ParameterSetName)'"
         Switch ($PSCmdlet.ParameterSetName) {
             'Identity' {
-                switch -Regex ($Identity -replace '\*','%') {
+                switch -Regex ($Identity -replace '\*', '%') {
                     '^(\d|%)+$' {
                         Get-CimInstance @cimHash -Filter ('CI_ID LIKE "{0}"' -f $PSItem)
                     }
@@ -512,14 +512,14 @@ Function Get-CCMCimInstance {
     [Alias('Get-CCMInstance')]
     [cmdletbinding()]
     param(
-        [Parameter(Mandatory, Position = 0,ParameterSetName='Class')]
+        [Parameter(Mandatory, Position = 0, ParameterSetName = 'Class')]
         [Alias('Class')]
         [string]$ClassName,
 
-        [Parameter(ParameterSetName='Class')]
+        [Parameter(ParameterSetName = 'Class')]
         [string]$Filter,
 
-        [Parameter(ParameterSetName='Query')]
+        [Parameter(ParameterSetName = 'Query')]
         [string]$Query,
 
         [Parameter(Position = 1)]
@@ -541,7 +541,7 @@ Function Get-CCMCimInstance {
     }
 }
 function Get-CCMCimInstanceByResourceName {
-<#
+    <#
 .SYNOPSIS
 
 Searches for a ccm class by resource ID or name
@@ -581,7 +581,7 @@ Please help me rename this function, having a hard time coming up with a meaning
         [parameter(mandatory)]
         [string[]]$ClassName,
 
-        [parameter(valuefrompipeline,ValueFromPipelineByPropertyName)]
+        [parameter(valuefrompipeline, ValueFromPipelineByPropertyName)]
         [alias('ResourceId')]
         [string[]]$Identity       
     )
@@ -606,7 +606,7 @@ Please help me rename this function, having a hard time coming up with a meaning
 }
 Function Get-CCMCollection {
 
-<#
+    <#
 .SYNOPSIS
 
 Get an SCCM Collection
@@ -728,7 +728,7 @@ Function Get-CCMCollectionMember {
     param(
         #Specifies an SCCM Resource object by providing the 'Name' or 'ResourceID'.
         [Parameter(ValueFromPipeline = $true, Position = 0, ParameterSetName = 'Identity')]
-        [Alias('CollectionName','CollectionID')]
+        [Alias('CollectionName', 'CollectionID')]
         [WildcardPattern]$Identity,
 
         #Specifies a CIM instance object to use as input.
@@ -740,8 +740,7 @@ Function Get-CCMCollectionMember {
         [string]$Filter
     )
 
-    Begin
-    {
+    Begin {
         try {
             $cimHash = $Global:CCMConnection.PSObject.Copy()
         }
@@ -753,7 +752,7 @@ Function Get-CCMCollectionMember {
         $identityFilter = 'CollectionID LIKE "{0}" OR Name LIKE "{0}"'
 
         $collParm = @{
-            KeyOnly = $true
+            KeyOnly   = $true
             ClassName = 'SMS_Collection'
         }
     }
@@ -762,7 +761,7 @@ Function Get-CCMCollectionMember {
         Write-Debug $PSCmdlet.ParameterSetName
         Switch ($PSCmdlet.ParameterSetName) {
             'Identity' {
-                foreach($collection in (Get-CimInstance @cimHash @collParm -filter ($identityFilter -f $Identity.ToWql()) )) {
+                foreach ($collection in (Get-CimInstance @cimHash @collParm -filter ($identityFilter -f $Identity.ToWql()) )) {
                     Get-CimInstance @cimHash -ClassName SMS_FullCollectionMembership -Filter ($identityFilter -f $collection.CollectionID)
                 }
             }
@@ -804,7 +803,7 @@ Function Get-CCMCollectionSettings {
 }
 Function Get-CCMObjectContainerItem {
 
-    [Alias('Get-SMS_ObjectContainerItem', 'Get-CCMFolderChildItem','gcmfci')]
+    [Alias('Get-SMS_ObjectContainerItem', 'Get-CCMFolderChildItem', 'gcmfci')]
     [cmdletbinding(DefaultParameterSetName = 'none')]
 
     param(
@@ -836,7 +835,7 @@ Function Get-CCMObjectContainerItem {
             }
             'Identity' {
                 switch -Regex ($Identity) {
-                    '^SMS_ObjectContainerNode'{
+                    '^SMS_ObjectContainerNode' {
                         Get-CimInstance  @cimHash -Filter ($PSItem -replace '^.+?\s')
                         continue
                     }
@@ -853,28 +852,28 @@ Function Get-CCMObjectContainerItem {
             }
         }
 
-        if ($result){
+        if ($result) {
             $resultParm = @{
                 CimSession = $cimHash.CimSession
-                NameSpace = $cimHash.NameSpace
-                ClassName = ($result | Select-Object -first 1).ObjectTypeName -replace '^([^_]*_[^_]*).*$','$1'
+                NameSpace  = $cimHash.NameSpace
+                ClassName  = ($result | Select-Object -first 1).ObjectTypeName -replace '^([^_]*_[^_]*).*$', '$1'
             }
 
             #this will fail on types with multiple keys, may need to add support if any of these types can be in a folder
             $resultKey = (Get-CimClass @resultParm).CimClassProperties |
                 Where-Object {$PSItem.Qualifiers.Name -eq 'key' -or $PSItem.Name -match 'uniqueid$'} |
-                    Select-Object -ExpandProperty Name -First 1
+                Select-Object -ExpandProperty Name -First 1
 
             $resultFilter = '({0} LIKE "{1}%")' #testing to see if this gets applications - they have a "/<version>" suffix
 
             if ($Property) {
                 $resultParm['Property'] = $Property
             }
-            foreach ($a_result in $result){
-                Get-CimInstance @resultParm -Filter ($resultFilter -f $resultKey,$a_result.InstanceKey)
+            foreach ($a_result in $result) {
+                Get-CimInstance @resultParm -Filter ($resultFilter -f $resultKey, $a_result.InstanceKey)
             }
         }
-        else{
+        else {
             Write-Verbose "No childitems found in '$Identity'"
         }
     }
@@ -883,7 +882,7 @@ Function Get-CCMObjectContainerItem {
 }
 Function Get-CCMObjectContainerNode {
 
-    [Alias('Get-SMS_ObjectContainerNode', 'Get-CCMFolder','Get-ObjectContainerNode')]
+    [Alias('Get-SMS_ObjectContainerNode', 'Get-CCMFolder', 'Get-ObjectContainerNode')]
     [cmdletbinding(DefaultParameterSetName = 'Identity')]
 
     param(
@@ -933,8 +932,7 @@ Function Get-CCMObjectContainerNode {
                 Get-CimInstance @cimHash -Filter $Filter
             }
             'CimInstance' {
-                switch ($CimInstance)
-                {
+                switch ($CimInstance) {
                     {$PSItem.CimClass.CimClassName -eq 'SMS_ObjectContainerNode'} {
                         $CimInstance | Get-CimInstance
                         continue
@@ -1030,7 +1028,7 @@ https://github.com/saladproblems/CCM-Core
             }
             { -not $PSItem } {}
             default {
-                Write-Error ('Did not recognize Identity: {0}{1}' -f $Identity,$Identity.GetType())
+                Write-Error ('Did not recognize Identity: {0}{1}' -f $Identity, $Identity.GetType())
             }
         }
         if ($Filter) {        
@@ -1062,7 +1060,7 @@ Function Get-CCMResourceMembership {
 
         #Specifies a set of instance properties to retrieve.
         [Parameter()]
-        [string[]]$Property = @('Name','collectionid','lastchangetime','limittocollectionid','limittocollectionname'),
+        [string[]]$Property = @('Name', 'collectionid', 'lastchangetime', 'limittocollectionid', 'limittocollectionname'),
 
         # Parameter help description
         [Parameter()]
@@ -1104,10 +1102,10 @@ Function Get-CCMResourceMembership {
         }
         $resourceList | ForEach-Object {
             $ccmParam = @{
-                Query = $query -f ($Property -join ','),$PSItem.ResourceID,($HasMaintenanceWindow.IsPresent -1)
+                Query = $query -f ($Property -join ','), $PSItem.ResourceID, ($HasMaintenanceWindow.IsPresent - 1)
             }
             $collection = Get-CimInstance @global:CCMConnection @ccmParam
-            if($ShowResourceName.IsPresent) {
+            if ($ShowResourceName.IsPresent) {
                 Write-Host $PSItem.Name -ForegroundColor Green
             }
             Write-Output $collection
@@ -1220,8 +1218,8 @@ Function Get-CCMSoftwareUpdate {
     param(
         #Specifies an SCCM Resource object by providing the 'Name' or 'ResourceID'.
         [Parameter(ValueFromPipeline, Position = 0, ParameterSetName = 'Identity')]
-        [Alias('Name','CI_ID')]
-        [string[]]$Identity='*',
+        [Alias('Name', 'CI_ID')]
+        [string[]]$Identity = '*',
 
         #Specifies a CIM instance object to use as input.
         [Parameter(ValueFromPipeline, Mandatory, ParameterSetName = 'inputObject')]
@@ -1232,7 +1230,7 @@ Function Get-CCMSoftwareUpdate {
         [string]$Filter,
 
         [Parameter()]
-        [string[]]$Property = @('ArticleID','BulletinID','LocalizedDescription','LocalizedDisplayName','LocalizedCategoryInstanceNames')
+        [string[]]$Property = @('ArticleID', 'BulletinID', 'LocalizedDescription', 'LocalizedDisplayName', 'LocalizedCategoryInstanceNames')
     )
 
     Begin {
@@ -1249,7 +1247,7 @@ Function Get-CCMSoftwareUpdate {
         Switch ($PSCmdlet.ParameterSetName) {
             'Identity' {
                 foreach ($obj in $Identity) {
-                    Get-CimInstance @cimHash -Filter ('ArticleID LIKE "{0}" OR LocalizedDisplayName LIKE "{0}"' -f $obj -replace '\*','%')
+                    Get-CimInstance @cimHash -Filter ('ArticleID LIKE "{0}" OR LocalizedDisplayName LIKE "{0}"' -f $obj -replace '\*', '%')
                 }
             }
             'inputObject' {
@@ -1270,7 +1268,7 @@ Function Get-CCMSoftwareUpdate {
     }
 }
 Function Get-CCMSoftwareUpdateGroup {
-<#
+    <#
 .SYNOPSIS
 
 Gets an SCCM 'Software Update Group' (sug/SMS_AuthorizationList)
@@ -1295,53 +1293,53 @@ Returns all resources whose  start with ADR
 https://github.com/saladproblems/CCM-Core
 
 #>
-        [Alias('Get-SMS_AuthorizationList','Get-CCMSUG')]
-        [cmdletbinding(DefaultParameterSetName = 'inputObject')]
+    [Alias('Get-SMS_AuthorizationList', 'Get-CCMSUG')]
+    [cmdletbinding(DefaultParameterSetName = 'inputObject')]
 
-        param(
-            #Specifies an SCCM Resource object by providing the 'Name' or 'ResourceID'.
-            [Parameter(ValueFromPipeline, Position = 0, ParameterSetName = 'Identity')]
-            [Alias('Name','CI_ID')]
-            [string[]]$Identity='*',
+    param(
+        #Specifies an SCCM Resource object by providing the 'Name' or 'ResourceID'.
+        [Parameter(ValueFromPipeline, Position = 0, ParameterSetName = 'Identity')]
+        [Alias('Name', 'CI_ID')]
+        [string[]]$Identity = '*',
 
-            #Specifies a CIM instance object to use as input.
-            [Parameter(ValueFromPipeline, Mandatory, ParameterSetName = 'inputObject')]
-            [ciminstance]$inputObject,
+        #Specifies a CIM instance object to use as input.
+        [Parameter(ValueFromPipeline, Mandatory, ParameterSetName = 'inputObject')]
+        [ciminstance]$inputObject,
 
-            #Specifies a where clause to use as a filter. Specify the clause in either the WQL or the CQL query language.
-            [Parameter(ParameterSetName = 'Filter')]
-            [string]$Filter
-        )
+        #Specifies a where clause to use as a filter. Specify the clause in either the WQL or the CQL query language.
+        [Parameter(ParameterSetName = 'Filter')]
+        [string]$Filter
+    )
 
-        Begin {
-            try {
-                $cimHash = $Global:CCMConnection.PSObject.Copy()
-            }
-            catch {
-                Throw 'Not connected to CCM, reconnect using Connect-CCM'
-            }
-            $cimHash['ClassName'] = 'SMS_AuthorizationList'
+    Begin {
+        try {
+            $cimHash = $Global:CCMConnection.PSObject.Copy()
         }
-
-        Process {
-            Switch ($PSCmdlet.ParameterSetName) {
-                'Identity' {
-                    foreach ($obj in $Identity) {
-                        Get-CimInstance @cimHash -Filter ('LocalizedDisplayName LIKE "{0}" OR ci_id LIKE "{0}"' -f $obj -replace '\*','%')
-                    }
-                }
-                'inputObject' {
-                    $inputObject | Get-CimInstance
-                }
-                'Filter' {
-                    foreach ($obj in $Filter) {
-                        Get-CimInstance @cimHash -filter $obj
-                    }
-                }
-            }
-
+        catch {
+            Throw 'Not connected to CCM, reconnect using Connect-CCM'
         }
+        $cimHash['ClassName'] = 'SMS_AuthorizationList'
     }
+
+    Process {
+        Switch ($PSCmdlet.ParameterSetName) {
+            'Identity' {
+                foreach ($obj in $Identity) {
+                    Get-CimInstance @cimHash -Filter ('LocalizedDisplayName LIKE "{0}" OR ci_id LIKE "{0}"' -f $obj -replace '\*', '%')
+                }
+            }
+            'inputObject' {
+                $inputObject | Get-CimInstance
+            }
+            'Filter' {
+                foreach ($obj in $Filter) {
+                    Get-CimInstance @cimHash -filter $obj
+                }
+            }
+        }
+
+    }
+}
 Function Get-CCMUserMachineRelationship {
     [alias('Get-SMS_UserMachineRelationship', 'Get-CCMClientUserRelationship')]
     [cmdletbinding()]
@@ -1470,8 +1468,7 @@ Function Invoke-CCMCollectionRefresh {
     }
 
 }
-Function New-CCMCollection
-{
+Function New-CCMCollection {
     [cmdletbinding()]
     [Alias('New-SMS_Collection')]
 
@@ -1482,28 +1479,25 @@ Function New-CCMCollection
 
         [ccm.CollectionType]$CollectionType,
 
-        [Parameter(Mandatory,ParameterSetName='CollectionID')]
+        [Parameter(Mandatory, ParameterSetName = 'CollectionID')]
         [string]$LimitToCollectionID,
 
-        [Parameter(Mandatory,ParameterSetName='Collection')]
-        [ValidateScript({$PSItem.CimClass.CimClassName -eq 'SMS_Collection'})]
+        [Parameter(Mandatory, ParameterSetName = 'Collection')]
+        [ValidateScript( {$PSItem.CimClass.CimClassName -eq 'SMS_Collection'})]
         [ciminstance]$LimitToCollection
     )
 
-    Begin
-    {
+    Begin {
         $cimHash = $sbCCMGetCimParm.InvokeReturnAsIs()
     }
 
-    Process
-    {
+    Process {
         $newCollectionProperty = @{
-            Name = $Name
-            CollectionType = [int]$CollectionType
+            Name                = $Name
+            CollectionType      = [int]$CollectionType
             LimitToCollectionID = $LimitToCollectionID
         }
-        if ($LimitToCollection)
-        {
+        if ($LimitToCollection) {
             $newCollectionProperty['LimitToCollectionID'] = $LimitToCollection.CollectionID
         }
 

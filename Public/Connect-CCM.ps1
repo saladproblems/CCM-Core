@@ -1,5 +1,5 @@
 ﻿function Connect-CCM {
- <#
+    <#
     .SYNOPSIS
         This function establishes a connection to an SCCM Server system.
 
@@ -35,31 +35,44 @@
         [System.Management.Automation.PSCredential]
         $Credential
     )
+    begin {
+        $cimSessionParam = @{
+            ComputerName = $ComputerName 
+            Name         = "ccmConnection"
+        }
+        if ($Credential) {
+            $cimSessionParam['Credential'] = $Credential
+        }
+    }
 
     process {
-        Write-Verbose "Looking for CIM Session 'ccmConnection'"
-        $cimSession = Get-CimSession -Name "ccmConnection" -ErrorAction SilentlyContinue | Select-Object -First 1
-
-        if ($Reconnect) {
-            $cimSession | Remove-CimSession
+        
+        try {
+            Write-Verbose "Looking for CIM Session 'ccmConnection'"
+            $cimSession = Get-CimSession -Name 'ccmConnection' -ErrorAction Stop
+            Write-Verbose 'Session Found'
+            if ($Reconnect) {
+                $cimSession | Remove-CimSession
+                New-CimSession @cimSessionParam -ErrorAction Stop            
+            }
         }
-
-        $siteParm = @{
+        catch {
+             Write-Verbose 'session not found'
+            $cimSession = New-CimSession @cimSessionParam -ErrorAction Stop
+        }
+   
+        
+        $siteParam = @{
             ClassName = 'SMS_ProviderLocation'
             NameSpace = 'root/sms'
         }
 
-        $siteName = try {
-            (Get-CimInstance @siteParm -CimSession $cimSession)[0].NamespacePath -replace '^.+site_'
-        }
-        catch {
-            $cimSession = New-CimSession -ComputerName $ComputerName -Name "ccmConnection" -Credential $Credential
-            (Get-CimInstance @siteParm -CimSession $cimSession)[0].NamespacePath -replace '^.+site_'
-        }
+        $siteName = (Get-CimInstance @siteParam -CimSession $cimSession -ErrorAction Stop)[0].NamespacePath -replace '^.+site_'
+
     }
     end {
         Set-Variable -Name global:CCMConnection -Value @{
-            CimSession = $cimSession
+            CimSession = $cimSession | Select-Object -First 1
             NameSpace  = 'root\sms\site_{0}' -f $siteName
         }
     }

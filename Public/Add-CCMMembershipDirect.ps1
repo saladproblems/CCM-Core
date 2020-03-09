@@ -3,7 +3,7 @@
 
     param(
         [Parameter()]
-        [ValidateScript({$PSItem.CimSystemProperties.ClassName -match '^sms_r_(system|user)'})]
+        [ValidateScript( {$PSItem.CimSystemProperties.ClassName -match '^sms_r_(system|user)'})]
         [CimInstance[]]$Resource,
 
         [Parameter()]

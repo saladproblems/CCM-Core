@@ -1,18 +1,17 @@
 Describe 'Connect-CCM' {
-    Context 'New connection' {
-    Mock 'New-CimSession' {
-        Write-Error 'oh no'
-        #New-MockObject -Type 'Microsoft.Management.Infrastructure.CimSession'
-    }
-    Mock 'Get-CimSession' {
-        New-MockObject -Type 'Microsoft.Management.Infrastructure.CimSession'
-    }
-    Mock 'Remove-CimSession' {}
+    Context 'Initial Connection' {
+        Mock 'New-CimSession' {
+            New-MockObject -Type 'Microsoft.Management.Infrastructure.CimSession'
+        }
+        Mock 'Get-CimSession' {
+            throw 'oh no'
+        }
+        Mock 'Remove-CimSession' {}
 
-    mock 'Get-CimInstance' {
-        [pscustomobject]@{ NamespacePath = 'xxx' }
+        mock 'Get-CimInstance' {
+            [pscustomobject]@{ NamespacePath = 'xxx' }
+        }
+        Connect-CCM -ComputerName 'server' -Verbose
+        Assert-MockCalled -CommandName 'New-CimSession' -Times 1
     }
-    Connect-CCM -ComputerName 'server'
-    Assert-MockCalled -CommandName 'New-CimSession' -Times 1
-}
 }
