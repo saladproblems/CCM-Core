@@ -1,88 +1,77 @@
+Get-Module -ListAvailable ccm | Sort-Object Version | Select-Object -last 1 | Import-Module -Force
 
-InModuleScope  CCM {
-    Describe 'Connect-CCM' {   
-        Mock 'New-CimSession' {
-            New-MockObject -Type 'Microsoft.Management.Infrastructure.CimSession'
-        }
-        mock 'Get-CimInstance' {
-            [pscustomobject]@{ NamespacePath = 'xxx' }
-        }
-        mock 'Get-CimSession' {
-            throw 'not found'
-        }
-        Context 'Use existing CimSession' {
+InModuleScope -ModuleName ccm {
+    describe 'connect-ccm' {
+        context 'Use existing connection' {
             mock 'Get-CimSession' {
-                New-MockObject -Type 'Microsoft.Management.Infrastructure.CimSession'
+                New-MockObject -type 'Microsoft.Management.Infrastructure.CimSession'
             }
-            Connect-CCM -ComputerName 'server'
+            mock New-CimSession { }
+            mock Set-Variable { }
+            mock Get-CimInstance {
+                [pscustomobject]@{
+                    NamespacePath = '\site_xxx'
+                }
+            }
+            Connect-CCM -ComputerName 'mock'
 
-            it 'Search for existing CIM session' {
-                Assert-MockCalled -CommandName 'Get-CimSession'
+            it 'Did not create new connection' {
+                Assert-MockCalled -CommandName Get-CimSession -Times 1
+                Assert-MockCalled -CommandName New-CimSession -Times 0
             }
-            it 'Created new CIM Session' {
-                Assert-MockCalled -CommandName 'New-CimSession' -Times 1 -ExclusiveFilter { $ComputerName -eq 'Server' -and $Credential -eq $null }                
-            }
-            it 'Queried Server for sitecode' {
-                Assert-MockCalled -CommandName 'Get-CimInstance' -ExclusiveFilter { $ClassName -eq 'SMS_ProviderLocation' -and $NameSpace -eq 'root/sms' }
-            }
-            it 'Set variable CCMConnection' {
-                $global:CCMConnection.NameSpace | Should -Be root\sms\site_xxx
-                $global:CCMConnection.CimSession | Should -BeOfType 'Microsoft.Management.Infrastructure.CimSession'
+            it 'Set ccmConnection variable' {
+                Assert-MockCalled -CommandName Set-Variable -ParameterFilter { $Name -eq 'global:CCMConnection' -and $Value.NameSpace -eq 'root\sms\site_xxx' }
             }
         }
-        Context 'Connect' {
-            Connect-CCM -ComputerName 'server'
-            it 'Search for existing CIM session (and fail)' {
-                Assert-MockCalled -CommandName 'Get-CimSession'
-            }
-            it 'Created new CIM Session' {
-                Assert-MockCalled -CommandName 'New-CimSession' -Times 1 -ExclusiveFilter { $ComputerName -eq 'Server' -and $Credential -eq $null }                
-            }
-            it 'Queried Server for sitecode' {
-                Assert-MockCalled -CommandName 'Get-CimInstance' -ExclusiveFilter { $ClassName -eq 'SMS_ProviderLocation' -and $NameSpace -eq 'root/sms' }
-            }
-            it 'Set variable CCMConnection' {
-                $global:CCMConnection.NameSpace | Should -Be root\sms\site_xxx
-                $global:CCMConnection.CimSession | Should -BeOfType 'Microsoft.Management.Infrastructure.CimSession'
-            }
-        }
-        Context 'Connect with Credential' {        
-            Connect-CCM -ComputerName 'server' -Credential (New-MockObject -Type PSCredential)
-            it 'Search for existing CIM session (and fail)' {
-                Assert-MockCalled -CommandName 'Get-CimSession'
-            }
-            it 'Created new CIM Session' {
-                Assert-MockCalled -CommandName 'New-CimSession' -Times 1 -ExclusiveFilter { $ComputerName -eq 'Server' -and $Credential -ne $null }                
-            }
-            it 'Queried Server for sitecode' {
-                Assert-MockCalled -CommandName 'Get-CimInstance' -ExclusiveFilter { $ClassName -eq 'SMS_ProviderLocation' -and $NameSpace -eq 'root/sms' }
-            }
-            it 'Set variable CCMConnection' {
-                $global:CCMConnection.NameSpace | Should -Be root\sms\site_xxx
-                $global:CCMConnection.CimSession | Should -BeOfType 'Microsoft.Management.Infrastructure.CimSession'
-            }
-        }
-        Context 'Reconnect' {
-            Connect-CCM -ComputerName 'server'
+        context 'New connection' {
             mock 'Get-CimSession' {
-                New-MockObject -Type 'Microsoft.Management.Infrastructure.CimSession'
+                Write-Error 'no session found'
             }
-            mock 'Remove-CimSession' { }            
-            it 'Search for existing CIM session' {
-                Assert-MockCalled -CommandName 'Get-CimSession'
+            mock New-CimSession {
+                New-MockObject -type 'Microsoft.Management.Infrastructure.CimSession'
             }
-            it 'Remove connection CIM Session' {
+            mock Set-Variable { }
+            mock Get-CimInstance {
+                [pscustomobject]@{
+                    NamespacePath = '\site_xxx'
+                }
+            }
+            Connect-CCM -ComputerName 'mock'
+
+            it 'Create new connection' {
+                Assert-MockCalled -CommandName New-CimSession -Times 1
+            }
+            it 'Set ccmConnection variable' {
+                Assert-MockCalled -CommandName Set-Variable -ParameterFilter { $Name -eq 'global:CCMConnection' -and $Value.NameSpace -eq 'root\sms\site_xxx' }
+            }
+        }
+        context 'Reconnect' {
+            mock 'Get-CimSession' {
+                New-MockObject -type 'Microsoft.Management.Infrastructure.CimSession'
+            }
+            mock 'Remove-CimSession' {}
+            mock New-CimSession {
+                New-MockObject -type 'Microsoft.Management.Infrastructure.CimSession'
+            }
+            mock Set-Variable { }
+            mock Get-CimInstance {
+                [pscustomobject]@{
+                    NamespacePath = '\site_xxx'
+                }
+            }
+            Connect-CCM -ComputerName 'mock' -Reconnect
+
+            it 'Find existing connection' {
+                Assert-MockCalled -CommandName Get-CimSession -Times 1
+            }
+            it 'Remove connection' {
                 Assert-MockCalled -CommandName Remove-CimSession
             }
-            it 'Created new CIM Session' {
-                Assert-MockCalled -CommandName 'New-CimSession' -Times 1 -ExclusiveFilter { $ComputerName -eq 'Server' -and $Credential -eq $null }                
+            it 'Create new connection' {
+                Assert-MockCalled -CommandName New-CimSession -Times 1
             }
-            it 'Queried Server for sitecode' {
-                Assert-MockCalled -CommandName 'Get-CimInstance' -ExclusiveFilter { $ClassName -eq 'SMS_ProviderLocation' -and $NameSpace -eq 'root/sms' }
-            }
-            it 'Set variable CCMConnection' {
-                $global:CCMConnection.NameSpace | Should -Be root\sms\site_xxx
-                $global:CCMConnection.CimSession | Should -BeOfType 'Microsoft.Management.Infrastructure.CimSession'
+            it 'Set ccmConnection variable' {
+                Assert-MockCalled -CommandName Set-Variable -ParameterFilter { $Name -eq 'global:CCMConnection' -and $Value.NameSpace -eq 'root\sms\site_xxx' }
             }
         }
     }

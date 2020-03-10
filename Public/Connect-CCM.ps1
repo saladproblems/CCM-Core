@@ -52,7 +52,7 @@
             $cimSession = Get-CimSession -Name 'ccmConnection' -ErrorAction Stop
             Write-Verbose 'Session Found'
             if ($Reconnect) {
-                $cimSession | Remove-CimSession
+                Remove-CimSession -CimSession $cimSession
                 New-CimSession @cimSessionParam -ErrorAction Stop            
             }
         }
@@ -76,5 +76,4 @@
             NameSpace  = 'root\sms\site_{0}' -f $siteName
         }
     }
-
 }
