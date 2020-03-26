@@ -1,6 +1,44 @@
 ﻿<?xml version="1.0" encoding="utf-8" ?>
 <Configuration>
     <ViewDefinitions>
+            <View>
+            <Name>SMS_UpdatesAssignment</Name>
+            <ViewSelectedBy>
+                <TypeName>Microsoft.Management.Infrastructure.CimInstance#SMS_UpdatesAssignment</TypeName>
+            </ViewSelectedBy>
+            <TableControl>
+                <TableHeaders>
+                    <TableColumnHeader>
+                    </TableColumnHeader>
+                    <TableColumnHeader>
+                    </TableColumnHeader>
+                    <TableColumnHeader>
+                    </TableColumnHeader>
+                    <TableColumnHeader>
+                    </TableColumnHeader>
+
+                </TableHeaders>
+                <TableRowEntries>
+                    <TableRowEntry>
+                        <TableColumnItems>
+                            <TableColumnItem>
+                                <PropertyName>AssignmentName</PropertyName>
+                            </TableColumnItem>
+                            <TableColumnItem>
+                                <PropertyName>AssignmentID</PropertyName>
+                            </TableColumnItem>
+                            <TableColumnItem>
+                                <PropertyName>TargetCollectionID</PropertyName>
+                            </TableColumnItem>
+                            <TableColumnItem>
+                                <PropertyName>EnforcementDeadline</PropertyName>
+                            </TableColumnItem>
+
+                        </TableColumnItems>
+                    </TableRowEntry>
+                </TableRowEntries>
+            </TableControl>
+        </View>
         <View>
             <Name>SMS_Collection</Name>
             <ViewSelectedBy>
@@ -46,6 +84,63 @@
                             </TableColumnItem>
                             <TableColumnItem>
                                 <PropertyName>LimitToCollectionName</PropertyName>
+                            </TableColumnItem>
+
+                        </TableColumnItems>
+                    </TableRowEntry>
+                </TableRowEntries>
+            </TableControl>
+        </View>
+        <View>
+            <Name>SMS_Collection</Name>
+            <ViewSelectedBy>
+                <TypeName>Microsoft.Management.Infrastructure.CimInstance#SMS_SoftwareUpdate</TypeName>
+            </ViewSelectedBy>
+            <TableControl>
+                <TableHeaders>
+                    <TableColumnHeader>
+                    </TableColumnHeader>
+                    <TableColumnHeader>
+                    </TableColumnHeader>
+                    <TableColumnHeader>
+                    </TableColumnHeader>
+                    <TableColumnHeader>
+                        <Width>5</Width>
+                    </TableColumnHeader>
+                    <TableColumnHeader>
+                        <Width>19</Width>
+                    </TableColumnHeader>
+                    <TableColumnHeader>
+                        <Width>30</Width>
+                    </TableColumnHeader>
+                    <TableColumnHeader>
+                        <Width>30</Width>
+                    </TableColumnHeader>
+
+                </TableHeaders>
+                <TableRowEntries>
+                    <TableRowEntry>
+                        <TableColumnItems>
+                            <TableColumnItem>
+                                <PropertyName>ArticleID</PropertyName>
+                            </TableColumnItem>
+                            <TableColumnItem>
+                                <PropertyName>CI_ID</PropertyName>
+                            </TableColumnItem>
+                            <TableColumnItem>
+                                <PropertyName>LocalizedDisplayName</PropertyName>
+                            </TableColumnItem>
+                            <TableColumnItem>
+                                <PropertyName>IsDeployed</PropertyName>
+                            </TableColumnItem>
+                            <TableColumnItem>
+                                <PropertyName>MaxExecutionTime</PropertyName>
+                            </TableColumnItem>
+                            <TableColumnItem>
+                                <PropertyName>DatePosted</PropertyName>
+                            </TableColumnItem>
+                            <TableColumnItem>
+                                <PropertyName>DateRevised</PropertyName>
                             </TableColumnItem>
 
                         </TableColumnItems>
@@ -506,7 +601,7 @@
                 </TableRowEntries>
             </TableControl>
         </View>
-                <View>
+        <View>
             <Name>SMS_DesiredConfiguration</Name>
             <ViewSelectedBy>
                 <TypeName>Microsoft.Management.Infrastructure.CimInstance#root/ccm/dcm/SMS_DesiredConfiguration</TypeName>
@@ -518,7 +613,7 @@
                     <TableColumnHeader>
                     </TableColumnHeader>
                     <TableColumnHeader>
-                    <Label>LastComplianceStatus</Label>
+                        <Label>LastComplianceStatus</Label>
                     </TableColumnHeader>
                     <TableColumnHeader>
                     </TableColumnHeader>
