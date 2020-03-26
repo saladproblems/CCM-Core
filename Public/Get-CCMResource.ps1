@@ -42,12 +42,7 @@ https://github.com/saladproblems/CCM-Core
     )
 
     Begin {
-        try {
-            $cimHash = $Global:CCMConnection.PSObject.Copy()
-        }
-        catch {
-            Throw 'Not connected to CCM, reconnect using Connect-CCM'
-        }
+        $cimHash = Copy-CCMConnection
         [string]$propertyString = $Property -replace '^', 'SMS_R_System.' -join ','
     }
 
@@ -58,10 +53,10 @@ https://github.com/saladproblems/CCM-Core
             }
             { $PSItem -is [ciminstance] } {
                 switch ($PSItem) {
-                    {$PSItem.CimSystemProperties.ClassName -eq 'SMS_R_System'} {
+                    { $PSItem.CimSystemProperties.ClassName -eq 'SMS_R_System' } {
                         Get-CimInstance -InputObject $PSItem
                     }
-                    {$PSItem.CimSystemProperties.ClassName -eq 'SMS_Collection'} {
+                    { $PSItem.CimSystemProperties.ClassName -eq 'SMS_Collection' } {
                         Get-CimInstance @cimHash -Query ('SELECT {0} FROM SMS_R_System INNER JOIN SMS_FullCollectionMembership ON SMS_R_System.ResourceId = SMS_FullCollectionMembership.ResourceId WHERE CollectionId = "{1}"' -f $propertyString, $PSItem.CollectionId)
                     }
                     default {
@@ -69,9 +64,9 @@ https://github.com/saladproblems/CCM-Core
                     }
                 }
             }
-            { -not $PSItem } {}
+            { -not $PSItem } { }
             default {
-                Write-Error ('Did not recognize Identity: {0}{1}' -f $Identity,$Identity.GetType())
+                Write-Error ('Did not recognize Identity: {0}{1}' -f $Identity, $Identity.GetType())
             }
         }
         if ($Filter) {        

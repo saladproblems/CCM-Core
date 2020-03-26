@@ -358,6 +358,26 @@ function Connect-CCM {
 <#
 placeholder for converting hardware inventory queries to readable format
 #>
+<#
+.SYNOPSIS
+    Copies CCM connection variable
+.DESCRIPTION
+    Copies CCM connection variable, so that CCM functions don't update the orginal variable. Hashtables are references in memory, so it's necessary to use the copy method to create a new object in case functions modify it
+#>
+
+function Copy-CCMConnection {
+    [cmdletbinding()]
+    param()
+
+    process {
+        try {
+            $Global:CCMConnection.PSObject.Copy()
+        }
+        catch {
+            Throw 'Not connected to CCM, reconnect using Connect-CCM'
+        }
+    }
+}
 #Find resources by collection, for use wth getting clients from multiple collections at once
 
 function Find-CCMClientByCollection {
@@ -814,6 +834,40 @@ Function Get-CCMCollectionSettings {
     }
 
 }
+Function Get-CCMSoftwareUpdateDeployment {
+    [alias('Get-SMS_UpdatesAssignment')]
+    [cmdletbinding()]
+
+    param(
+        [parameter(mandatory, ValueFromPipeline)]
+        [object]$InputObject
+    )
+
+    Begin {
+        $cimHash = Copy-CCMConnection
+        #SMS_UpdatesAssignment
+    }
+
+    Process {
+        $query = switch ($InputObject) {
+            { $PSItem -is [string] } {
+                'select * from SMS_UpdatesAssignment Where AssignmentName LIKE "{0}" OR AssignmentID LIKE "{0}" OR TargetCollectionID LIKE "{0}"' -f
+                ($InputObject -replace '\*', '%')
+            }
+            { $PSItem -is [ciminstance] } {
+                switch ($PSItem){
+                    { $PSItem.CimClass.CimClassName -eq 'SMS_Collection' }{
+                        'select * from SMS_UpdatesAssignment Where TargetCollectionID = "{0}"' -f $PSItem.CollectionId
+                    }
+                }
+            }
+        }
+        $query | ForEach-Object {
+            Get-CimInstance @cimHash -Query $PSItem
+        }
+    }
+
+}
 Function Get-CCMObjectContainerItem {
 
     [Alias('Get-SMS_ObjectContainerItem', 'Get-CCMFolderChildItem','gcmfci')]
@@ -1013,12 +1067,7 @@ https://github.com/saladproblems/CCM-Core
     )
 
     Begin {
-        try {
-            $cimHash = $Global:CCMConnection.PSObject.Copy()
-        }
-        catch {
-            Throw 'Not connected to CCM, reconnect using Connect-CCM'
-        }
+        $cimHash = Copy-CCMConnection
         [string]$propertyString = $Property -replace '^', 'SMS_R_System.' -join ','
     }
 
@@ -1029,10 +1078,10 @@ https://github.com/saladproblems/CCM-Core
             }
             { $PSItem -is [ciminstance] } {
                 switch ($PSItem) {
-                    {$PSItem.CimSystemProperties.ClassName -eq 'SMS_R_System'} {
+                    { $PSItem.CimSystemProperties.ClassName -eq 'SMS_R_System' } {
                         Get-CimInstance -InputObject $PSItem
                     }
-                    {$PSItem.CimSystemProperties.ClassName -eq 'SMS_Collection'} {
+                    { $PSItem.CimSystemProperties.ClassName -eq 'SMS_Collection' } {
                         Get-CimInstance @cimHash -Query ('SELECT {0} FROM SMS_R_System INNER JOIN SMS_FullCollectionMembership ON SMS_R_System.ResourceId = SMS_FullCollectionMembership.ResourceId WHERE CollectionId = "{1}"' -f $propertyString, $PSItem.CollectionId)
                     }
                     default {
@@ -1040,9 +1089,9 @@ https://github.com/saladproblems/CCM-Core
                     }
                 }
             }
-            { -not $PSItem } {}
+            { -not $PSItem } { }
             default {
-                Write-Error ('Did not recognize Identity: {0}{1}' -f $Identity,$Identity.GetType())
+                Write-Error ('Did not recognize Identity: {0}{1}' -f $Identity, $Identity.GetType())
             }
         }
         if ($Filter) {        
