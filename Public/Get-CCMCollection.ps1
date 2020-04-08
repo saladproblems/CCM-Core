@@ -1,6 +1,6 @@
 ﻿Function Get-CCMCollection {
 
-<#
+    <#
 .SYNOPSIS
 
 Get an SCCM Collection
@@ -52,7 +52,7 @@ https://github.com/saladproblems/CCM-Core
         #Specifies an SCCM collection object by providing the collection name or ID.
         [Parameter(ValueFromPipeline, ValueFromPipelineByPropertyName, Position = 0, ParameterSetName = 'Identity')]
         [Alias('ClientName', 'CollectionName', 'CollectionID', 'Name')]
-        [string[]]$Identity = '*',
+        [string[]]$Identity,
 
         #Specifies a where clause to use as a filter. Specify the clause in the WQL query language.
         [Parameter(Mandatory, ParameterSetName = 'Filter')]
@@ -100,9 +100,12 @@ https://github.com/saladproblems/CCM-Core
                 Get-CimInstance @cimHash -ClassName SMS_Collection -Filter $Filter
             }
             'InputObject' {
-                switch ($InputObject) {
-                    {$PSItem.CimInstance.cimclass -match 'SMS_ObjectContainerItem'} {
+                $cimFilter = switch ($InputObject) {
+                    { $PSItem.cimclass -match 'SMS_ObjectContainerItem' } {
                         'CollectionID = "{0}"' -f $PSItem.CollectionID
+                    }
+                    { $PSItem.cimclass -match 'SMS_UpdatesAssignment' } {
+                        'CollectionID = "{0}"' -f $PSItem.TargetCollectionID
                     }
                 }
             }
@@ -114,5 +117,5 @@ https://github.com/saladproblems/CCM-Core
         }
     }
     End
-    {}
+    { }
 }

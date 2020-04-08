@@ -3,8 +3,8 @@ Function Get-CCMSoftwareUpdateDeployment {
     [cmdletbinding()]
 
     param(
-        [parameter(mandatory, ValueFromPipeline)]
-        [object]$InputObject
+        [parameter(ValueFromPipeline)]
+        [object]$InputObject = '*'
     )
 
     Begin {

@@ -638,7 +638,7 @@ Please help me rename this function, having a hard time coming up with a meaning
 }
 Function Get-CCMCollection {
 
-<#
+    <#
 .SYNOPSIS
 
 Get an SCCM Collection
@@ -690,7 +690,7 @@ https://github.com/saladproblems/CCM-Core
         #Specifies an SCCM collection object by providing the collection name or ID.
         [Parameter(ValueFromPipeline, ValueFromPipelineByPropertyName, Position = 0, ParameterSetName = 'Identity')]
         [Alias('ClientName', 'CollectionName', 'CollectionID', 'Name')]
-        [string[]]$Identity = '*',
+        [string[]]$Identity,
 
         #Specifies a where clause to use as a filter. Specify the clause in the WQL query language.
         [Parameter(Mandatory, ParameterSetName = 'Filter')]
@@ -738,9 +738,12 @@ https://github.com/saladproblems/CCM-Core
                 Get-CimInstance @cimHash -ClassName SMS_Collection -Filter $Filter
             }
             'InputObject' {
-                switch ($InputObject) {
-                    {$PSItem.CimInstance.cimclass -match 'SMS_ObjectContainerItem'} {
+                $cimFilter = switch ($InputObject) {
+                    { $PSItem.cimclass -match 'SMS_ObjectContainerItem' } {
                         'CollectionID = "{0}"' -f $PSItem.CollectionID
+                    }
+                    { $PSItem.cimclass -match 'SMS_UpdatesAssignment' } {
+                        'CollectionID = "{0}"' -f $PSItem.TargetCollectionID
                     }
                 }
             }
@@ -752,7 +755,7 @@ https://github.com/saladproblems/CCM-Core
         }
     }
     End
-    {}
+    { }
 }
 Function Get-CCMCollectionMember {
 
@@ -831,40 +834,6 @@ Function Get-CCMCollectionSettings {
             Get-CimInstance @cimHash -ClassName SMS_CollectionSettings -Filter "CollectionID = '$($a_Collection.CollectionID)'" | Get-CimInstance
         }
 
-    }
-
-}
-Function Get-CCMSoftwareUpdateDeployment {
-    [alias('Get-SMS_UpdatesAssignment')]
-    [cmdletbinding()]
-
-    param(
-        [parameter(mandatory, ValueFromPipeline)]
-        [object]$InputObject
-    )
-
-    Begin {
-        $cimHash = Copy-CCMConnection
-        #SMS_UpdatesAssignment
-    }
-
-    Process {
-        $query = switch ($InputObject) {
-            { $PSItem -is [string] } {
-                'select * from SMS_UpdatesAssignment Where AssignmentName LIKE "{0}" OR AssignmentID LIKE "{0}" OR TargetCollectionID LIKE "{0}"' -f
-                ($InputObject -replace '\*', '%')
-            }
-            { $PSItem -is [ciminstance] } {
-                switch ($PSItem){
-                    { $PSItem.CimClass.CimClassName -eq 'SMS_Collection' }{
-                        'select * from SMS_UpdatesAssignment Where TargetCollectionID = "{0}"' -f $PSItem.CollectionId
-                    }
-                }
-            }
-        }
-        $query | ForEach-Object {
-            Get-CimInstance @cimHash -Query $PSItem
-        }
     }
 
 }
@@ -1329,6 +1298,40 @@ Function Get-CCMSoftwareUpdate {
         }
 
     }
+}
+Function Get-CCMSoftwareUpdateDeployment {
+    [alias('Get-SMS_UpdatesAssignment')]
+    [cmdletbinding()]
+
+    param(
+        [parameter(ValueFromPipeline)]
+        [object]$InputObject = '*'
+    )
+
+    Begin {
+        $cimHash = Copy-CCMConnection
+        #SMS_UpdatesAssignment
+    }
+
+    Process {
+        $query = switch ($InputObject) {
+            { $PSItem -is [string] } {
+                'select * from SMS_UpdatesAssignment Where AssignmentName LIKE "{0}" OR AssignmentID LIKE "{0}" OR TargetCollectionID LIKE "{0}"' -f
+                ($InputObject -replace '\*', '%')
+            }
+            { $PSItem -is [ciminstance] } {
+                switch ($PSItem){
+                    { $PSItem.CimClass.CimClassName -eq 'SMS_Collection' }{
+                        'select * from SMS_UpdatesAssignment Where TargetCollectionID = "{0}"' -f $PSItem.CollectionId
+                    }
+                }
+            }
+        }
+        $query | ForEach-Object {
+            Get-CimInstance @cimHash -Query $PSItem
+        }
+    }
+
 }
 Function Get-CCMSoftwareUpdateGroup {
 <#
