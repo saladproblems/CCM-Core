@@ -518,6 +518,43 @@ Function Get-CCMApplication {
 
     }
 }
+function Get-CCMBoundaryGroup {
+    [cmdletbinding()]
+    
+    param(
+        [parameter(mandatory, ValueFromPipeline, ValueFromPipelineByPropertyName)]
+        [alias('BoundaryGroupIDs')]
+        [object[]]$Identity
+    )
+    begin {
+        $cimHash = Copy-CCMConnection
+        $cimHash['ClassName'] = 'SMS_BoundaryGroup'
+        $filterTemplate = 'GroupGUID LIKE "{0}" OR GroupID LIKE "{0}" OR Name LIKE "{0}"'
+    }
+    process {
+        Switch ($Identity) {
+            { $PSItem -is [string] -or $PSItem -is [int] } {
+                Get-CimInstance @cimHash -Filter ($filterTemplate -f $Identity -replace '\*', '%')            
+            }
+            { $PSItem -is [ciminstance] } {
+                switch ($PSItem) {
+                    <# add support for piping ccmclient cache object ROOT/ccm/LocationServices:BoundaryGroupCache
+                    { $PSItem.CimSystemProperties.ClassName } {
+                        Get-CimInstance @cimHash -Filter "groupid=$($psitem)"
+                    }
+                    #>
+                    { $PSItem.CimSystemProperties.ClassName -eq 'SMS_BoundaryGroup' } {
+                        Get-CimInstance -InputObject $PSItem
+                    }
+                }
+            }
+            default {
+                Write-Error ('Did not recognize Identity: {0}{1}' -f $Identity, $Identity.GetType())
+            }
+        }
+    }
+
+}
 Function Get-CCMCimClass {
     [Alias('Get-CCMClass')]
     [cmdletbinding()]
@@ -1643,8 +1680,8 @@ class ValidateCimClass : System.Management.Automation.ValidateEnumeratedArgument
     }
 
     [void]ValidateElement($Element) {
-        if ([string]$Element.CimClass.CimClassName -in $this.PropertyName) {
-            throw ('{0} != {1}' -f $this.PropertyName, $Element.CimClass.CimClassName)
+        if ($this.PropertyName -notmatch "$($Element.CimClass.CimClassName)$") {
+            throw ('Unexpected CIM class type: {0}' -f $Element.CimClass.CimClassName)
         }
     }
 }

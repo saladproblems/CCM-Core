@@ -41,8 +41,8 @@ class ValidateCimClass : System.Management.Automation.ValidateEnumeratedArgument
     }
 
     [void]ValidateElement($Element) {
-        if ([string]$Element.CimClass.CimClassName -in $this.PropertyName) {
-            throw ('{0} != {1}' -f $this.PropertyName, $Element.CimClass.CimClassName)
+        if ($this.PropertyName -notmatch "$($Element.CimClass.CimClassName)$") {
+            throw ('Unexpected CIM class type: {0}' -f $Element.CimClass.CimClassName)
         }
     }
 }
