@@ -15,24 +15,39 @@ Design Goals:
 When Contributing:
 * When contributing to the module please update the .PS1, ps1xml, etc. files, but not the PSD1 or PSM1 directly. I'm working on improving my pipeline, and the supporting files like the manifest/module are created dynamically from the .ps1 files, so any manual changes to the PSM1 are ultimately overwritten
 
-### Primary Functions:
+### Public Functions:
 - Add-CCMMembershipDirect
+- Add-CCMMembershipQuery
 - Connect-CCM
+- Find-CCMClientByCollection
+- Find-CCMObject
+- Get-CCMApplication
+- Get-CCMBoundaryGroup
 - Get-CCMCimClass
 - Get-CCMCimInstance
-- Get-CCMClientExecutionRequest
+- Get-CCMCimInstanceByResourceName
 - Get-CCMCollection
 - Get-CCMCollectionMember
 - Get-CCMCollectionSettings
+- Get-CCMObjectContainerItem
+- Get-CCMObjectContainerNode
 - Get-CCMResource
 - Get-CCMResourceMembership
 - Get-CCMScript
 - Get-CCMScriptExecutionStatus
+- Get-CCMSoftwareUpdate
+- Get-CCMSoftwareUpdateDeployment
+- Get-CCMSoftwareUpdateGroup
+- Get-CCMUpdatesAssignment
 - Get-CCMUserMachineRelationship
+- Get-NthWeekDay
 - Invoke-CCMCollectionRefresh
 - New-CCMCollection
+- Remove-CCMMembershipDirect
+- Test-CCMQueryRule
 
-### SupportFunctions
+
+### SupportFunctions:
 - Add-CCMClassType
 - Get-NthWeekDay (Get-PatchTuesday)
 
