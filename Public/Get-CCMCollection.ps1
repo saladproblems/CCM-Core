@@ -107,6 +107,9 @@ https://github.com/saladproblems/CCM-Core
                     { $PSItem.cimclass -match 'SMS_UpdatesAssignment' } {
                         'CollectionID = "{0}"' -f $PSItem.TargetCollectionID
                     }
+                    { $PSItem.cimclass -match 'SMS_Collection' } {
+                        'CollectionID = "{0}"' -f $PSItem.CollectionID
+                    }
                 }
             }
         }
