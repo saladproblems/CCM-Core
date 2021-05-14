@@ -523,9 +523,16 @@ Function Get-CCMCimClass {
     [Alias('Get-CCMClass')]
     [cmdletbinding()]
     param(
-        [Parameter(Mandatory, Position = 0)]
+        [Parameter(Position = 0)]
         [Alias('Class')]
-        [string]$ClassName
+        [string]$ClassName,
+
+        [Parameter(Position = 1)]
+        [string]$PropertyName,
+
+        [Parameter(Position = 2)]
+        [string]$MethodName
+
     )
 
     Begin {
@@ -686,11 +693,12 @@ https://github.com/saladproblems/CCM-Core
     param(
         #Specifies a CIM instance object to use as input.
         [Parameter(Mandatory, ValueFromPipeline, ParameterSetName = 'InputObject')]
+        [ValidateCimClass('SMS_Collection,SMS_R_System')]
         [ciminstance[]]$InputObject,
 
         #Specifies an SCCM collection object by providing the collection name or ID.
         [Parameter(ValueFromPipeline, ValueFromPipelineByPropertyName, Position = 0, ParameterSetName = 'Identity')]
-        [Alias('ClientName', 'CollectionName', 'CollectionID', 'Name')]
+        [Alias('ClientName', 'CollectionName', 'CollectionID')]
         [string[]]$Identity,
 
         #Specifies a where clause to use as a filter. Specify the clause in the WQL query language.
@@ -698,8 +706,7 @@ https://github.com/saladproblems/CCM-Core
         [string]$Filter,
 
         #Only return collections with service windows - Maintenance windows are a lazy property, requery to view maintenance window info
-        [Parameter()]
-        [Parameter(ParameterSetName = 'Identity')]
+        [Parameter()]        
         [alias('HasServiceWindow')]
         [switch]$HasMaintenanceWindow,
 
@@ -740,14 +747,17 @@ https://github.com/saladproblems/CCM-Core
             }
             'InputObject' {
                 $cimFilter = switch ($InputObject) {
-                    { $PSItem.cimclass -match 'SMS_ObjectContainerItem' } {
+                    { $PSItem.CimClass.CimClassName -match 'SMS_ObjectContainerItem' } {
                         'CollectionID = "{0}"' -f $PSItem.CollectionID
                     }
-                    { $PSItem.cimclass -match 'SMS_UpdatesAssignment' } {
+                    { $PSItem.CimClass.CimClassName -match 'SMS_UpdatesAssignment' } {
                         'CollectionID = "{0}"' -f $PSItem.TargetCollectionID
                     }
-                    { $PSItem.cimclass -match 'SMS_Collection' } {
+                    { $PSItem.CimClass.CimClassName -match 'SMS_Collection' } {
                         'CollectionID = "{0}"' -f $PSItem.CollectionID
+                    }
+                    { $PSItem.CimClass.CimClassName -match 'SMS_R_System' } {
+                        'CollectionID IN (Select CollectionID from sms_fullcollectionmembership Where Resourceid = "{0}")' -f $PSItem.Resourceid
                     }
                 }
             }
@@ -1254,11 +1264,12 @@ Function Get-CCMSoftwareUpdate {
     param(
         #Specifies an SCCM Resource object by providing the 'Name' or 'ResourceID'.
         [Parameter(ValueFromPipeline, Position = 0, ParameterSetName = 'Identity')]
-        [Alias('Name','CI_ID')]
-        [string[]]$Identity='*',
+        [Alias('Name', 'CI_ID')]
+        [string[]]$Identity = '*',
 
         #Specifies a CIM instance object to use as input.
-        [Parameter(ValueFromPipeline, Mandatory, ParameterSetName = 'inputObject')]
+        [Parameter(ValueFromPipeline, ParameterSetName = 'inputObject')]
+        [ValidateCimClass('SMS_G_System_QUICK_FIX_ENGINEERING,SMS_UpdatesAssignment')]
         [ciminstance]$inputObject,
 
         #Specifies a where clause to use as a filter. Specify the clause in either the WQL or the CQL query language.
@@ -1266,12 +1277,15 @@ Function Get-CCMSoftwareUpdate {
         [string]$Filter,
 
         [Parameter()]
-        [string[]]$Property = @('ArticleID','BulletinID','LocalizedDescription','LocalizedDisplayName','LocalizedCategoryInstanceNames')
+        [string[]]$Property
     )
 
     Begin {
         try {
             $cimHash = $Global:CCMConnection.PSObject.Copy()
+            if ($property) { 
+                $cimHash['Property'] = $Property
+            }
         }
         catch {
             Throw 'Not connected to CCM, reconnect using Connect-CCM'
@@ -1283,14 +1297,16 @@ Function Get-CCMSoftwareUpdate {
         Switch ($PSCmdlet.ParameterSetName) {
             'Identity' {
                 foreach ($obj in $Identity) {
-                    Get-CimInstance @cimHash -Filter ('ArticleID LIKE "{0}" OR LocalizedDisplayName LIKE "{0}"' -f $obj -replace '\*','%')
+                    Get-CimInstance @cimHash -Filter ('ArticleID LIKE "{0}" OR LocalizedDisplayName LIKE "{0}"' -f $obj -replace '\*', '%')
                 }
             }
             'inputObject' {
                 switch -Regex ($inputObject.CimClass.CimClassName) {
                     'SMS_G_System_QUICK_FIX_ENGINEERING' {
-                        $cimHash['Property'] = $Property
                         Get-CimInstance @cimHash -Filter ('articleID = "{0}"' -f ($inputObject.HotFixID -replace '[^0-9]'))
+                    }
+                    'SMS_UpdatesAssignment' {
+                        Get-CimInstance @cimHash -Filter ('ci_id in ({0})' -f ($inputObject.AssignedCIs -join ',') )
                     }
                 }
             }
@@ -1659,19 +1675,6 @@ function Test-CCMQueryExpression {
 .DESCRIPTION
     Long description
 .EXAMPLE
-function test-validator {
-    [cmdletbinding()]
-    param(
-        [ValidateCimClass('Win32_OperatingSystem')]
-        [ciminstance[]]$cimInstance
-    )
-
-    $cimInstance    
-}
-test-validator -ciminstance (Get-CimInstance Win32_operatingsystem -computername localhost,localhost)
-
-Use the validator in a function to verify the cim class is the correct type 
-.EXAMPLE
     function test-validator {
         [cmdletbinding()]
         param(
@@ -1692,11 +1695,11 @@ class ValidateCimClass : System.Management.Automation.ValidateEnumeratedArgument
     [string]$PropertyName    
 
     ValidateCimClass([string[]]$PropertyName) {
-        $this.PropertyName = $PropertyName -split ','
+        $this.PropertyName = $PropertyName
     }
 
     [void]ValidateElement($Element) {
-        if ($this.PropertyName -notmatch "$($Element.CimClass.CimClassName)$") {
+        if ($this.PropertyName -notmatch $Element.CimClass.CimClassName) {
             throw ('Unexpected CIM class type: {0}' -f $Element.CimClass.CimClassName)
         }
     }

@@ -4,19 +4,6 @@
 .DESCRIPTION
     Long description
 .EXAMPLE
-function test-validator {
-    [cmdletbinding()]
-    param(
-        [ValidateCimClass('Win32_OperatingSystem')]
-        [ciminstance[]]$cimInstance
-    )
-
-    $cimInstance    
-}
-test-validator -ciminstance (Get-CimInstance Win32_operatingsystem -computername localhost,localhost)
-
-Use the validator in a function to verify the cim class is the correct type 
-.EXAMPLE
     function test-validator {
         [cmdletbinding()]
         param(
@@ -37,11 +24,11 @@ class ValidateCimClass : System.Management.Automation.ValidateEnumeratedArgument
     [string]$PropertyName    
 
     ValidateCimClass([string[]]$PropertyName) {
-        $this.PropertyName = $PropertyName -split ','
+        $this.PropertyName = $PropertyName
     }
 
     [void]ValidateElement($Element) {
-        if ($this.PropertyName -notmatch "$($Element.CimClass.CimClassName)$") {
+        if ($this.PropertyName -notmatch $Element.CimClass.CimClassName) {
             throw ('Unexpected CIM class type: {0}' -f $Element.CimClass.CimClassName)
         }
     }

@@ -2,9 +2,16 @@
     [Alias('Get-CCMClass')]
     [cmdletbinding()]
     param(
-        [Parameter(Mandatory, Position = 0)]
+        [Parameter(Position = 0)]
         [Alias('Class')]
-        [string]$ClassName
+        [string]$ClassName,
+
+        [Parameter(Position = 1)]
+        [string]$PropertyName,
+
+        [Parameter(Position = 2)]
+        [string]$MethodName
+
     )
 
     Begin {

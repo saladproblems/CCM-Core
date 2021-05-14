@@ -47,11 +47,12 @@ https://github.com/saladproblems/CCM-Core
     param(
         #Specifies a CIM instance object to use as input.
         [Parameter(Mandatory, ValueFromPipeline, ParameterSetName = 'InputObject')]
+        [ValidateCimClass('SMS_Collection,SMS_R_System')]
         [ciminstance[]]$InputObject,
 
         #Specifies an SCCM collection object by providing the collection name or ID.
         [Parameter(ValueFromPipeline, ValueFromPipelineByPropertyName, Position = 0, ParameterSetName = 'Identity')]
-        [Alias('ClientName', 'CollectionName', 'CollectionID', 'Name')]
+        [Alias('ClientName', 'CollectionName', 'CollectionID')]
         [string[]]$Identity,
 
         #Specifies a where clause to use as a filter. Specify the clause in the WQL query language.
@@ -59,8 +60,7 @@ https://github.com/saladproblems/CCM-Core
         [string]$Filter,
 
         #Only return collections with service windows - Maintenance windows are a lazy property, requery to view maintenance window info
-        [Parameter()]
-        [Parameter(ParameterSetName = 'Identity')]
+        [Parameter()]        
         [alias('HasServiceWindow')]
         [switch]$HasMaintenanceWindow,
 
@@ -101,14 +101,17 @@ https://github.com/saladproblems/CCM-Core
             }
             'InputObject' {
                 $cimFilter = switch ($InputObject) {
-                    { $PSItem.cimclass -match 'SMS_ObjectContainerItem' } {
+                    { $PSItem.CimClass.CimClassName -match 'SMS_ObjectContainerItem' } {
                         'CollectionID = "{0}"' -f $PSItem.CollectionID
                     }
-                    { $PSItem.cimclass -match 'SMS_UpdatesAssignment' } {
+                    { $PSItem.CimClass.CimClassName -match 'SMS_UpdatesAssignment' } {
                         'CollectionID = "{0}"' -f $PSItem.TargetCollectionID
                     }
-                    { $PSItem.cimclass -match 'SMS_Collection' } {
+                    { $PSItem.CimClass.CimClassName -match 'SMS_Collection' } {
                         'CollectionID = "{0}"' -f $PSItem.CollectionID
+                    }
+                    { $PSItem.CimClass.CimClassName -match 'SMS_R_System' } {
+                        'CollectionID IN (Select CollectionID from sms_fullcollectionmembership Where Resourceid = "{0}")' -f $PSItem.Resourceid
                     }
                 }
             }

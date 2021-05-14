@@ -125,10 +125,10 @@
                                 <PropertyName>ArticleID</PropertyName>
                             </TableColumnItem>
                             <TableColumnItem>
-                                <PropertyName>CI_ID</PropertyName>
+                                <PropertyName>BulletinID</PropertyName>
                             </TableColumnItem>
                             <TableColumnItem>
-                                <PropertyName>LocalizedDisplayName</PropertyName>
+                                <PropertyName>CI_ID</PropertyName>
                             </TableColumnItem>
                             <TableColumnItem>
                                 <PropertyName>IsDeployed</PropertyName>
@@ -140,7 +140,7 @@
                                 <PropertyName>DatePosted</PropertyName>
                             </TableColumnItem>
                             <TableColumnItem>
-                                <PropertyName>DateRevised</PropertyName>
+                                <PropertyName>LocalizedDisplayName</PropertyName>
                             </TableColumnItem>
 
                         </TableColumnItems>
