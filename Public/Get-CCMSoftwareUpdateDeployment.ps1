@@ -1,34 +1,50 @@
 Function Get-CCMSoftwareUpdateDeployment {
     [alias('Get-SMS_UpdatesAssignment')]
-    [cmdletbinding()]
+    [cmdletbinding(DefaultParameterSetName = 'Identity')]
 
     param(
-        [parameter(ValueFromPipeline)]
-        [object]$InputObject = '*'
+        [parameter(ParameterSetName = 'Identity', position = 0)]
+        [string]$Identity = '*',
+
+        [parameter(ValueFromPipeline, ParameterSetName = 'inputObject')]
+        [ValidateCimClass('SMS_Collection,SMS_UpdatesAssignment')]
+        [ciminstance[]]$InputObject,
+
+        [parameter(Mandatory, ParameterSetName = 'Filter')]
+        [string]$Filter
     )
 
     Begin {
         $cimHash = Copy-CCMConnection
+        $cimHash['ClassName'] = 'SMS_UpdatesAssignment'
         #SMS_UpdatesAssignment
     }
 
     Process {
-        $query = switch ($InputObject) {
-            { $PSItem -is [string] } {
-                'select * from SMS_UpdatesAssignment Where AssignmentName LIKE "{0}" OR AssignmentID LIKE "{0}" OR TargetCollectionID LIKE "{0}"' -f
-                ($InputObject -replace '\*', '%')
+        Switch ($PSCmdlet.ParameterSetName) {
+            'Identity' {
+                Get-CimInstance @cimHash -Filter ('AssignmentName LIKE "{0}" OR AssignmentID LIKE "{0}"' -f ($Identity -replace '^$','%') -replace '\*', '%')
             }
-            { $PSItem -is [ciminstance] } {
-                switch ($PSItem){
-                    { $PSItem.CimClass.CimClassName -eq 'SMS_Collection' }{
-                        'select * from SMS_UpdatesAssignment Where TargetCollectionID = "{0}"' -f $PSItem.CollectionId
+            
+            'inputObject' {
+                switch -Regex ($inputObject[0].CimClass.CimClassName) {
+                    #requery the object if it's a update assignment
+                    'SMS_UpdatesAssignment' {
+                        $inputObject | Get-CimInstance
+                    }
+                    #provide all deployments targeted at a collection
+                    'SMS_Collection' {
+                        Get-CimInstance @cimHash -Filter ('TargetCollectionID IN ({0})' -f ($inputObject.CollectionID -replace '^|$', '"' -join ',') )
                     }
                 }
             }
+            'Filter' {
+                foreach ($obj in $Filter) {
+                    Get-CimInstance @cimHash -filter $obj
+                }
+            }
         }
-        $query | ForEach-Object {
-            Get-CimInstance @cimHash -Query $PSItem
-        }
+
     }
 
 }

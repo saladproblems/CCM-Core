@@ -1,5 +1,5 @@
-<# for possible future use and conversion to class based module
-class ccmResourceTransform:System.Management.Automation.ArgumentTransformationAttribute {    
+<# for future use
+class ccmResourceTransformAttribute:System.Management.Automation.ArgumentTransformationAttribute {    
     [object] Transform([System.Management.Automation.EngineIntrinsics]$engineIntrinsics, [object]$object) {        
         $output = switch ($object) {
             { $PSItem -is [Microsoft.Management.Infrastructure.CimInstance] } {
@@ -11,7 +11,7 @@ class ccmResourceTransform:System.Management.Automation.ArgumentTransformationAt
             }
             { $PSItem -is [string] } {                
                 switch -Regex ($PSItem) {                    
-                    '^(%|\d).+$' {
+                    '^(%|\d)+$' {
                         Get-CimInstance -ClassName SMS_R_System -Filter ('ResourceID LIKE "{0}"' -f $PSItem -replace '\*', '%') @global:CCMConnection 
                     }
                     default {

@@ -1,6 +1,6 @@
 ﻿Function Get-CCMResourceMembership {
     [Alias('Get-SMS_FullCollectionMembership')]
-    [cmdletbinding(DefaultParameterSetName = 'inputObject')]
+    [cmdletbinding()]
 
     param(
         #Specifies an the members an SCCM resource is a member of by the resource's name or ID.
@@ -10,7 +10,7 @@
 
         #Specifies a CIM instance object to use as input, must be SMS_R_System (returned by "get-CCMResource")
         [Parameter(ValueFromPipeline, Mandatory, ParameterSetName = 'inputObject')]
-        [ValidateScript( {$PSItem.CimClass.CimClassName -match 'SMS_R_System|SMS_FullCollectionMembership'})]
+        [ValidateScript( { $PSItem.CimClass.CimClassName -match 'SMS_R_System|SMS_FullCollectionMembership' })]
         [ciminstance]$inputObject,
 
         #Restrict results to only collections with a ServiceWindow count greater than 0
@@ -20,55 +20,55 @@
 
         #Specifies a set of instance properties to retrieve.
         [Parameter()]
-        [string[]]$Property = @('Name','collectionid','lastchangetime','limittocollectionid','limittocollectionname'),
+        [string[]]$Property = @('Name', 'collectionid', 'lastchangetime', 'limittocollectionid', 'limittocollectionname'),
 
         # Parameter help description
         [Parameter()]
-        [switch]$ShowResourceName
+        [alias('showresourcename')]
+        [switch]$IncludeResourceName
     )
 
     Begin {
         $cimHash = $Global:CCMConnection.PSObject.Copy()
-
-        $cimHash['ClassName'] = 'SMS_FullCollectionMembership'
-
         $query = @'
-        SELECT {0}
-        FROM   sms_collection
-               INNER JOIN sms_fullcollectionmembership
-                       ON sms_collection.collectionid =
-                          sms_fullcollectionmembership.collectionid
-        WHERE  sms_fullcollectionmembership.resourceid = {1} AND
-            sms_collection.servicewindowscount > {2}
-        ORDER BY Name,CollectionID
+            SELECT sms_r_system.NAME,
+                {0}
+            FROM   sms_collection
+                INNER JOIN sms_fullcollectionmembership
+                        ON sms_collection.collectionid =
+                            sms_fullcollectionmembership.collectionid
+                INNER JOIN sms_r_system
+                        ON sms_r_system.resourceid =
+                            sms_fullcollectionmembership.resourceid
+            WHERE  sms_fullcollectionmembership.resourceid IN ( {1} )
+                AND sms_collection.servicewindowscount >= {2}
+            ORDER  BY NAME,
+                    collectionid 
 '@
-
-        $getCollParm = @{ HasMaintenanceWindow = $HasMaintenanceWindow.IsPresent }
-
-        if ($Property) {
-            $getCollParm['Property'] = $Property
-        }
+        $propertyString = $Property -replace '^', 'sms_collection.' -join ','
     }
 
     Process {
         Write-Debug "Choosing parameterset: '$($PSCmdlet.ParameterSetName)'"
-        $resourceList = Switch ($PSCmdlet.ParameterSetName) {
+        $null = Switch ($PSCmdlet.ParameterSetName) {
             'Identity' {
-                Get-CCMResource $Identity
+                Get-CCMResource $Identity | Select-Object -ExpandProperty ResourceID -OutVariable +resourceList
             }
             'inputObject' {
-                Get-CCMResource -inputObject $inputObject
+                $inputObject | Select-Object -ExpandProperty ResourceID -OutVariable +resourceList
             }
-        }
-        $resourceList | ForEach-Object {
-            $ccmParam = @{
-                Query = $query -f ($Property -join ','),$PSItem.ResourceID,($HasMaintenanceWindow.IsPresent -1)
-            }
-            $collection = Get-CimInstance @global:CCMConnection @ccmParam
-            if($ShowResourceName.IsPresent) {
-                Write-Host $PSItem.Name -ForegroundColor Green
-            }
-            Write-Output $collection
         }
     }
-}
+
+    End {
+        $result = Get-CimInstance @cimHash -Query ($query -f $propertyString, ($resourceList -join ','), ([int]$HasMaintenanceWindow.IsPresent))
+
+        foreach ($obj in $result) {
+            $output = $obj.SMS_Collection
+            if ($IncludeResourceName.IsPresent) {
+                $output.psobject.TypeNames.Insert(0, 'SMS_Collection_IncludeResourceName')
+            }
+            $output
+        }
+    }
+}   

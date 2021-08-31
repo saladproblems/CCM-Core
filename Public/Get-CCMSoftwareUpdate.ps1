@@ -1,13 +1,13 @@
 Function Get-CCMSoftwareUpdate {
 
     [Alias()]
-    [cmdletbinding(DefaultParameterSetName = 'inputObject')]
+    [cmdletbinding(DefaultParameterSetName = 'identity')]
 
     param(
         #Specifies an SCCM Resource object by providing the 'Name' or 'ResourceID'.
         [Parameter(ValueFromPipeline, Position = 0, ParameterSetName = 'Identity')]
         [Alias('Name', 'CI_ID')]
-        [string[]]$Identity = '*',
+        [string[]]$Identity,
 
         #Specifies a CIM instance object to use as input.
         [Parameter(ValueFromPipeline, ParameterSetName = 'inputObject')]
@@ -36,10 +36,13 @@ Function Get-CCMSoftwareUpdate {
     }
 
     Process {
+        $PSCmdlet.ParameterSetName | Write-Verbose
         Switch ($PSCmdlet.ParameterSetName) {
             'Identity' {
-                foreach ($obj in $Identity) {
-                    Get-CimInstance @cimHash -Filter ('ArticleID LIKE "{0}" OR LocalizedDisplayName LIKE "{0}"' -f $obj -replace '\*', '%')
+                #replace "*"" with % so users can use wildcard "*"
+                foreach ($obj in ($Identity -replace '^$','%' -replace '\*','%')) {
+                    #articleID doesn't include "KB", remove if found
+                    Get-CimInstance @cimHash -Filter ('ArticleID LIKE "{0}" OR LocalizedDisplayName LIKE "{1}"' -f ($obj -replace '^kb'),$obj)
                 }
             }
             'inputObject' {
