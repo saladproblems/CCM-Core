@@ -25,7 +25,12 @@
         # Parameter help description
         [Parameter()]
         [alias('showresourcename')]
-        [switch]$IncludeResourceName
+        [switch]$IncludeResourceName,
+
+        # working on a better name for this
+        [Parameter()]
+        [int]$PageSize = 300
+
     )
 
     Begin {
@@ -52,7 +57,7 @@
         Write-Debug "Choosing parameterset: '$($PSCmdlet.ParameterSetName)'"
         $null = Switch ($PSCmdlet.ParameterSetName) {
             'Identity' {
-                Get-CCMResource $Identity | Select-Object -ExpandProperty ResourceID -OutVariable +resourceList
+                Get-CCMResource $Identity -Property ResourceID | Select-Object -ExpandProperty ResourceID -OutVariable +resourceList
             }
             'inputObject' {
                 $inputObject | Select-Object -ExpandProperty ResourceID -OutVariable +resourceList
@@ -64,7 +69,7 @@
         $result = Get-CimInstance @cimHash -Query ($query -f $propertyString, ($resourceList -join ','), ([int]$HasMaintenanceWindow.IsPresent))
 
         foreach ($obj in $result) {
-            $output = $obj.SMS_Collection
+            $output = $obj.SMS_Collection | Add-Member -NotePropertyName ResourceName -NotePropertyValue $obj.sms_r_system.name -PassThru
             if ($IncludeResourceName.IsPresent) {
                 $output.psobject.TypeNames.Insert(0, 'SMS_Collection_IncludeResourceName')
             }

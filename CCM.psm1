@@ -1111,7 +1111,12 @@ Function Get-CCMResourceMembership {
         # Parameter help description
         [Parameter()]
         [alias('showresourcename')]
-        [switch]$IncludeResourceName
+        [switch]$IncludeResourceName,
+
+        # working on a better name for this
+        [Parameter()]
+        [int]$PageSize = 300
+
     )
 
     Begin {
@@ -1138,7 +1143,7 @@ Function Get-CCMResourceMembership {
         Write-Debug "Choosing parameterset: '$($PSCmdlet.ParameterSetName)'"
         $null = Switch ($PSCmdlet.ParameterSetName) {
             'Identity' {
-                Get-CCMResource $Identity | Select-Object -ExpandProperty ResourceID -OutVariable +resourceList
+                Get-CCMResource $Identity -Property ResourceID | Select-Object -ExpandProperty ResourceID -OutVariable +resourceList
             }
             'inputObject' {
                 $inputObject | Select-Object -ExpandProperty ResourceID -OutVariable +resourceList
@@ -1150,7 +1155,7 @@ Function Get-CCMResourceMembership {
         $result = Get-CimInstance @cimHash -Query ($query -f $propertyString, ($resourceList -join ','), ([int]$HasMaintenanceWindow.IsPresent))
 
         foreach ($obj in $result) {
-            $output = $obj.SMS_Collection
+            $output = $obj.SMS_Collection | Add-Member -NotePropertyName ResourceName -NotePropertyValue $obj.sms_r_system.name -PassThru
             if ($IncludeResourceName.IsPresent) {
                 $output.psobject.TypeNames.Insert(0, 'SMS_Collection_IncludeResourceName')
             }
@@ -1158,6 +1163,77 @@ Function Get-CCMResourceMembership {
         }
     }
 }   
+function Get-CCMResourceMissingUpdate {
+    <#
+.Synopsis
+   Short description
+.DESCRIPTION
+   Long description
+.EXAMPLE
+   Example of how to use this cmdlet
+.EXAMPLE
+   Another example of how to use this cmdlet
+.PARAMETER All
+   Query which updates are missing from a resource based on sms_updatecompliancestatus
+
+.NOTES
+   General notes
+
+#>
+
+    [cmdletbinding()]
+
+    param(
+        [parameter(Position = 0, Mandatory, ValueFromPipeline, ValueFromPipelineByPropertyName)]
+        [alias('ComputerName', 'Name', 'ResourceId')]
+        [object]$InputObject,
+
+        [parameter()]
+        [switch]$All
+    )
+
+    begin {
+
+        if (-not $All.IsPresent) {
+            $isDeployed = 'AND sms_softwareupdate.isdeployed = 1'
+        }
+
+        $query = @'
+Select * 
+FROM SMS_SoftwareUpdate
+Where isdeployed = 1
+AND ArticleID in (
+    Select ArticleID From sms_updatecompliancestatus
+    WHERE status in (0,2)
+    AND MachineID in (
+        SELECT ResourceID from SMS_R_System
+        WHERE ResourceID LIKE "{0}" or Name LIKE "{0}"
+    )
+)
+ORDER By LocalizedDisplayName
+    
+'@ -f $isDeployed
+    }
+
+
+    process {
+        $resourceInfo = switch ($InputObject) {
+            { $PSItem.CimClass.CimSuperClassName -eq 'SMS_Resource' } {
+                'sms_r_system.ResourceId = {0}' -f $PSItem.ResourceId
+                break
+            }
+            { $PSItem -is [string] -or $PSItem -is [int] } {
+                'sms_r_system.ResourceId = "{0}" OR sms_r_system.Name = "{0}"' -f $PSItem
+            }
+
+            default {
+                'unexpected input type: {0}' -f $PSItem.GetType().Fullname
+            }
+        }
+        Get-CCMCimInstance -Query ($query -f $resourceInfo)
+    }
+
+}
 Function Get-CCMScript {
 
     [cmdletbinding(DefaultParameterSetName = 'inputObject')]
@@ -1331,7 +1407,7 @@ Function Get-CCMSoftwareUpdateDeployment {
         [string]$Identity = '*',
 
         [parameter(ValueFromPipeline, ParameterSetName = 'inputObject')]
-        [ValidateCimClass('SMS_Collection,SMS_UpdatesAssignment')]
+        [ValidateCimClass('SMS_Collection,SMS_UpdatesAssignment,SMS_SoftwareUpdate')]
         [ciminstance[]]$InputObject,
 
         [parameter(Mandatory, ParameterSetName = 'Filter')]
@@ -1347,7 +1423,7 @@ Function Get-CCMSoftwareUpdateDeployment {
     Process {
         Switch ($PSCmdlet.ParameterSetName) {
             'Identity' {
-                Get-CimInstance @cimHash -Filter ('AssignmentName LIKE "{0}" OR AssignmentID LIKE "{0}"' -f ($Identity -replace '^$','%') -replace '\*', '%')
+                Get-CimInstance @cimHash -Filter ('AssignmentName LIKE "{0}" OR AssignmentID LIKE "{0}"' -f ($Identity -replace '^$', '%') -replace '\*', '%')
             }
             
             'inputObject' {
@@ -1359,6 +1435,9 @@ Function Get-CCMSoftwareUpdateDeployment {
                     #provide all deployments targeted at a collection
                     'SMS_Collection' {
                         Get-CimInstance @cimHash -Filter ('TargetCollectionID IN ({0})' -f ($inputObject.CollectionID -replace '^|$', '"' -join ',') )
+                    }
+                    'SMS_SoftwareUpdate' {
+                        Get-CimInstance @cimHash -Filter ('AssignedCIs IN ({0})' -f ($inputObject.CI_ID -join ','))
                     }
                 }
             }
