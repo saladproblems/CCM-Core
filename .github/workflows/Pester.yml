@@ -1,6 +1,6 @@
 name: Pester
 on:
-  commit_comment:
+  push:
     branches: [ main ]
 jobs:
   test-pwsh:
