@@ -1,7 +1,6 @@
 name: Pester
-on:
-  branch_protection_rule:
-    branches: [ main ]
+on: [push, pull_request]
+
 jobs:
   test-pwsh:
     runs-on: windows-latest
