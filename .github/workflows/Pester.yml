@@ -11,5 +11,5 @@ jobs:
       run: |
         Set-PSRepository psgallery -InstallationPolicy trusted
         Install-Module -Name Pester -RequiredVersion 5.0.4 -Confirm:$false -Force
-        Invoke-Pester -Path "tests"        
+        Invoke-Pester -Path "Tests"        
       shell: pwsh
