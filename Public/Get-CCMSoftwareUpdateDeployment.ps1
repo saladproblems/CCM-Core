@@ -7,7 +7,7 @@ Function Get-CCMSoftwareUpdateDeployment {
         [string]$Identity = '*',
 
         [parameter(ValueFromPipeline, ParameterSetName = 'inputObject')]
-        [ValidateCimClass('SMS_Collection,SMS_UpdatesAssignment,SMS_SoftwareUpdate')]
+        [ValidateCimClass('SMS_Collection,SMS_UpdatesAssignment,SMS_SoftwareUpdate,SMS_R_System')]
         [ciminstance[]]$InputObject,
 
         [parameter(Mandatory, ParameterSetName = 'Filter')]
@@ -16,14 +16,22 @@ Function Get-CCMSoftwareUpdateDeployment {
 
     Begin {
         $cimHash = Copy-CCMConnection
-        $cimHash['ClassName'] = 'SMS_UpdatesAssignment'
-        #SMS_UpdatesAssignment
+        
+        $classHash = @{ ClassName = 'SMS_UpdatesAssignment' }
+  
+        $systemQueryTemplate = @'
+    select * from SMS_UpdatesAssignment
+    where TargetCollectionID IN(
+        Select CollectionID from sms_fullcollectionmembership
+        where ResourceID = {0}
+    )
+'@
     }
 
     Process {
         Switch ($PSCmdlet.ParameterSetName) {
             'Identity' {
-                Get-CimInstance @cimHash -Filter ('AssignmentName LIKE "{0}" OR AssignmentID LIKE "{0}"' -f ($Identity -replace '^$', '%') -replace '\*', '%')
+                Get-CimInstance @cimHash @classHash -Filter ('AssignmentName LIKE "{0}" OR AssignmentID LIKE "{0}"' -f ($Identity -replace '^$', '%') -replace '\*', '%')
             }
             
             'inputObject' {
@@ -34,16 +42,19 @@ Function Get-CCMSoftwareUpdateDeployment {
                     }
                     #provide all deployments targeted at a collection
                     'SMS_Collection' {
-                        Get-CimInstance @cimHash -Filter ('TargetCollectionID IN ({0})' -f ($inputObject.CollectionID -replace '^|$', '"' -join ',') )
+                        Get-CimInstance @cimHash @classHash -Filter ('TargetCollectionID IN ({0})' -f ($inputObject.CollectionID -replace '^|$', '"' -join ',') )
                     }
                     'SMS_SoftwareUpdate' {
-                        Get-CimInstance @cimHash -Filter ('AssignedCIs IN ({0})' -f ($inputObject.CI_ID -join ','))
+                        Get-CimInstance @cimHash @classHash -Filter ('AssignedCIs IN ({0})' -f ($inputObject.CI_ID -join ','))
+                    }
+                    'SMS_R_System' {
+                        Get-CimInstance @cimHash -Query ($systemQueryTemplate -f ($inputObject.ResourceID))
                     }
                 }
             }
             'Filter' {
                 foreach ($obj in $Filter) {
-                    Get-CimInstance @cimHash -filter $obj
+                    Get-CimInstance @cimHash @classHash -filter $obj
                 }
             }
         }

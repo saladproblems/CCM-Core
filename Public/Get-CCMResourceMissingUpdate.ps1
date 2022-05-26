@@ -24,20 +24,25 @@
         [object]$InputObject,
 
         [parameter()]
-        [switch]$All
+        [bool]$ExcludeUndeployed = $true
     )
 
     begin {
+        try {
+            $cimHash = $Global:CCMConnection.PSObject.Copy()
+        }
+        catch {
+            Throw 'Not connected to CCM, reconnect using Connect-CCM'
+        }
 
-        if (-not $All.IsPresent) {
-            $isDeployed = 'AND sms_softwareupdate.isdeployed = 1'
+        $filterDeployed = if ($ExcludeUndeployed) {
+            'AND IsDeployed = 1'
         }
 
         $query = @'
-Select * 
+SELECT *
 FROM SMS_SoftwareUpdate
-Where isdeployed = 1
-AND ArticleID in (
+WHERE ArticleID in (
     Select ArticleID From sms_updatecompliancestatus
     WHERE status in (0,2)
     AND MachineID in (
@@ -45,27 +50,30 @@ AND ArticleID in (
         WHERE ResourceID LIKE "{0}" or Name LIKE "{0}"
     )
 )
+{1}
+
 ORDER By LocalizedDisplayName
     
-'@ -f $isDeployed
+'@
     }
 
 
     process {
         $resourceInfo = switch ($InputObject) {
             { $PSItem.CimClass.CimSuperClassName -eq 'SMS_Resource' } {
-                'sms_r_system.ResourceId = {0}' -f $PSItem.ResourceId
+                $PSItem.ResourceId
                 break
             }
             { $PSItem -is [string] -or $PSItem -is [int] } {
-                'sms_r_system.ResourceId = "{0}" OR sms_r_system.Name = "{0}"' -f $PSItem
+                $PSItem
             }
 
             default {
                 'unexpected input type: {0}' -f $PSItem.GetType().Fullname
             }
         }
-        Get-CCMCimInstance -Query ($query -f $resourceInfo)
+        $query -f $resourceInfo, $isDeployed | Write-Verbose
+        Get-CimInstance @cimHash -Query ($query -f $resourceInfo, $filterDeployed)
     }
 
 }
