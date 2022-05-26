@@ -1,18 +1,15 @@
-name: Test PowerShell on Ubuntu
-on: push
-
+name: Pester
+on:
+  push:
+    branches: [ main ]
 jobs:
-  pester-test:
-    name: Pester test
-    runs-on: ubuntu-latest
+  test-pwsh:
+    runs-on: windows-latest
     steps:
-      - name: Check out repository code
-        uses: actions/checkout@v3
-      - name: Perform a Pester test from the command-line
-        shell: pwsh
-        run: Test-Path resultsfile.log | Should -Be $true
-      - name: Perform a Pester test from the Tests.ps1 file
-        shell: pwsh
-        run: |
-          Get-Location
-          #Invoke-Pester Unit.Tests.ps1 -Passthru
+    - uses: actions/checkout@v2
+    - name: Run Pester tests
+      run: |
+        Set-PSRepository psgallery -InstallationPolicy trusted
+        Install-Module -Name Pester -RequiredVersion 5.0.4 -Confirm:$false -Force
+        Invoke-Pester -Path "tests"        
+      shell: pwsh
