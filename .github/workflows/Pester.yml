@@ -1,6 +1,6 @@
 name: Pester
 on:
-  push:
+  branch_protection_rule:
     branches: [ main ]
 jobs:
   test-pwsh:
